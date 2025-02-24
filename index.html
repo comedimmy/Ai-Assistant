@@ -85,28 +85,20 @@
         .dropdown:hover .dropdown-content {
             display: block;
         }
-		.input_title{
-			
-		
+		.user-info {
+			display: flex;
+			align-items: center; 
+		}
+		.user-avatar {
+			width: 30px; /* 設定圖像大小 */
+			height: 30px;
+			border-radius: 50%; /* 讓頭像圓形顯示 */
 		}
     </style>
 	<div class="header">AI管家</div>
 </head>
 <body>
-    <h1>使用者資料</h1>
-    <div id="profile-info">
-        <p id="username"></p>
-        <img id="user-avatar" width="50" alt="User Avatar">
-    </div>
-	
     <div class="menu">
-	    <div class="dropdown">
-            <span style="color: red; cursor: pointer;">登入/註冊</span>
-            <div class="dropdown-content">
-                <a href="{{ url_for('login_page') }}">登入</a>
-				<a href="register.html">註冊</a>
-            </div>
-        </div>
         <div class="dropdown">
             <span style="color: red; cursor: pointer;">實況畫面</span>
             <div class="dropdown-content">
@@ -121,6 +113,27 @@
                 <a href="#">設備狀態</a>
             </div>
         </div>
+		<div class="dropdown">
+			{% if user_info %}
+				<!-- 如果已登入，顯示使用者的名字和頭像 -->
+				<span class="user-info">
+					<span style="cursor: pointer;">
+						<img src="{{ user_info['picture'] }}" alt="User Avatar" style="width"class="user-avatar">
+						<span style="color: red; cursor: pointer;">{{ user_info['name'] }}</span>
+					</span>
+				</span>
+				<div class="dropdown-content">
+					<a href="{{ url_for('logout') }}">登出</a>
+				</div>
+			{% else %}
+				<!-- 如果未登入，顯示登入/註冊 -->
+				<span style="color: red; cursor: pointer;">登入/註冊</span>
+				<div class="dropdown-content">
+					<a href="{{ url_for('login_page') }}">登入</a>
+					<a href="register.html">註冊</a>
+				</div>
+			{% endif %}
+		</div>
     </div>
 	<h2 >請輸入內容</h2>
 	<input type="text" id="userInput" placeholder="輸入字串">
@@ -235,10 +248,10 @@
 				.then(response => response.json())
 				.then(data => {
 					if (data.error) {
-						// 如果返回錯誤訊息（例如未登入），顯示提示
+						// 未登入顯示提示
 						document.getElementById("profile-info").innerHTML = "<p>未登入</p>";
 					} else {
-						// 如果有使用者資料，顯示使用者名稱和頭像
+						// 如果登入，取得使用者名稱和頭像
 						document.getElementById("username").innerText = data.name;
 						document.getElementById("user-avatar").src = data.picture;
 					}
