@@ -127,17 +127,9 @@
 			function logout() {
 				window.location.href = "/logout"; // 直接登出並重新導向
 			}
-		
         </script>
         
         <a href="{{ url_for('back') }}" class="return-link">返回</a>
     </div>
-	<div id="user-info" style="display: none; margin-top: 20px; text-align: center;">
-		<h3>登入成功！</h3>
-		<p>名稱: <span id="user-name"></span></p>
-		<p>Email: <span id="user-email"></span></p>
-		<img id="user-picture" src="" alt="使用者圖片" style="width: 100px; border-radius: 50%;">
-		<button onclick="logout()" class="btn">登出</button>
-	</div>
 </body>
 </html>
