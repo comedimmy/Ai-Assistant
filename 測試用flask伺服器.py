@@ -26,6 +26,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("APP_SECRET_KEY")
 app.config['SESSION_COOKIE_NAME'] = 'google-login-session'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
+app.secret_key = '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'
 # oAuth Setup
 oauth = OAuth(app)
 google = oauth.register(
@@ -42,12 +43,7 @@ google = oauth.register(
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
 )
 
-
-
-app = Flask(__name__)
-app.secret_key = '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'
-
-openai.api_key = "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"
+openai.api_key = "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"
 
 # 載入主模型和分詞器（用於判斷是否是餵魚）
 main_model_path = "./my_model"  # 這是主模型的路徑
