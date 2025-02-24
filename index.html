@@ -93,7 +93,12 @@
 	<div class="header">AI管家</div>
 </head>
 <body>
-    
+    <h1>使用者資料</h1>
+    <div id="profile-info">
+        <p id="username"></p>
+        <img id="user-avatar" width="50" alt="User Avatar">
+    </div>
+	
     <div class="menu">
 	    <div class="dropdown">
             <span style="color: red; cursor: pointer;">登入/註冊</span>
@@ -225,6 +230,22 @@
 				console.error("錯誤:", error);
 			});
 		}
+        // 發送請求到 /profile 路由
+			fetch('/profile')
+				.then(response => response.json())
+				.then(data => {
+					if (data.error) {
+						// 如果返回錯誤訊息（例如未登入），顯示提示
+						document.getElementById("profile-info").innerHTML = "<p>未登入</p>";
+					} else {
+						// 如果有使用者資料，顯示使用者名稱和頭像
+						document.getElementById("username").innerText = data.name;
+						document.getElementById("user-avatar").src = data.picture;
+					}
+				})
+				.catch(error => {
+					console.log("發生錯誤:", error);
+			});
 		</script>
 	</div>
 </body>
