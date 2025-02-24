@@ -11,7 +11,6 @@ import paho.mqtt.client as mqtt
 from flask import Flask, redirect, url_for, session,render_template
 from authlib.integrations.flask_client import OAuth
 from datetime import timedelta
-from auth_decorator import login_required
 
 # dotenv setup
 from dotenv import load_dotenv
@@ -26,7 +25,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("APP_SECRET_KEY")
 app.config['SESSION_COOKIE_NAME'] = 'google-login-session'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
-app.secret_key = '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'
+openai.api_key = os.getenv("OPENAI_API_KEY")
 # oAuth Setup
 oauth = OAuth(app)
 google = oauth.register(
@@ -43,7 +42,9 @@ google = oauth.register(
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
 )
 
-openai.api_key = "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"
+
+
+
 
 # 載入主模型和分詞器（用於判斷是否是餵魚）
 main_model_path = "./my_model"  # 這是主模型的路徑
@@ -198,10 +199,15 @@ def receive_data():
 
 
 
-@login_required
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html")  # index.html
+    if 'profile' in session:
+        # 使用者已登入，將資料傳給前端
+        user_info = session['profile']
+        return render_template('index.html', user_info=user_info)
+    else:
+        # 使用者未登入，顯示登入/註冊選項
+        return render_template('index.html', user_info=None)
 
 def hello_world():
     email = dict(session)['profile']['email']
@@ -235,6 +241,14 @@ def authorize():
     session.permanent = True  # make the session permanant so it keeps existing after broweser gets closed
     return redirect('/')
 
+@app.route('/profile')
+def profile():
+    if 'profile' in session:  # 如果 session 中有 'profile' 資料，代表使用者已登入
+        user_info = session['profile']
+        return jsonify(user_info)  # 返回使用者資料
+    else:
+        # 如果沒有登入，返回錯誤訊息
+        return jsonify({"error": "User not logged in"}), 401
 
 @app.route('/logout')
 def logout():
