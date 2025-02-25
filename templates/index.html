@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI管家</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+        }
+		h2 {
+			margin-bottom: 10px; /* 與輸入框保持一些距離 */
+		}
+		
+		input {
+			padding: 10px;
+			font-size: 16px;
+			text-align: center; /* 讓 placeholder 置中 */
+		}
+        .header {
+			background: url({{ url_for('static', filename='images/dd.jpg') }}) no-repeat center center/cover; /* 水族箱背景，請填入 URL */
+            width: 100%;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 30px;
+            font-weight: bold;
+            position: relative;
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: fadeInDown 1s ease-out forwards;
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 1); /* 添加黑色陰影 */
+        }
+		@keyframes shimmer {
+			0% { background-position: -200px 0; }
+			100% { background-position: 200px 0; }
+		}
+		@keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .menu {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+        }
+		.dropdown span {
+			color: white; /* 讓字是白色 */
+			font-size: 20px;
+			font-weight: bold; /* 加粗 */
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); /* 添加黑色陰影 */
+		}
+
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            min-width: 120px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .dropdown-content a {
+            color: white;
+            padding: 10px;
+            display: block;
+            text-decoration: none;
+        }
+        .dropdown-content a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+		.input_title{
+			
+		
+		}
+    </style>
+	<div class="header">AI管家</div>
+</head>
+<body>
+    
+    <div class="menu">
+	    <div class="dropdown">
+            <span style="color: red; cursor: pointer;">登入/註冊</span>
+            <div class="dropdown-content">
+                <a href="/Login"><img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="LINE Logo" width="20">登入</a>
+				<!-- <a href="register.html">註冊</a>  -->
+            </div>
+        </div>
+        <div class="dropdown">
+            <span style="color: red; cursor: pointer;">實況畫面</span>
+            <div class="dropdown-content">
+                <a href="#">攝影機1</a>
+                <a href="#">攝影機2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <span style="color: red; cursor: pointer;">AI助理</span>
+            <div class="dropdown-content">
+                <a href="#">語音控制</a>
+                <a href="#">設備狀態</a>
+            </div>
+        </div>
+    </div>
+	<h2 >請輸入內容</h2>
+	<input type="text" id="userInput" placeholder="輸入字串">
+    <button onclick="sendData()">發送到 Flask</button>
+	
+	<script>
+		function sendData() {
+			let inputText = document.getElementById("userInput").value;
+	
+			// 將資料打包成JSON
+			let jsonData = {
+				"message": inputText
+			};
+	
+			fetch("http://127.0.0.1:5000/send-mqtt", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(jsonData)
+			})
+			.then(response => response.json())
+			.then(data => {
+				// 創建一個新的<div>元素並將資料顯示在其中
+				const displayElement = document.createElement('div');
+				displayElement.textContent = "回應：" + JSON.stringify(data);
+				document.body.appendChild(displayElement); // 將<div>加入到body中
+			})
+			.catch(error => console.error("錯誤:", error));
+	}
+	</script>
+	
+	<div class="AI_communication">
+		<h2 id="title"></h2>
+		<input type="text" id="userInputQuation" placeholder="魚類知識問答">
+		<button onclick="sendQuation()">送出問題</button>
+		
+		<script>
+		function typeWriterEffect(text, elementId, speed = 50) {
+			let index = 0;
+			const element = document.getElementById(elementId);
+			element.textContent = ""; // 清空內容
+		
+			function type() {
+				if (index < text.length) {
+					element.textContent += text.charAt(index);
+					index++;
+					setTimeout(type, speed);
+				}
+			}
+			type();
+		}
+		       
+		window.onload = function() {
+			setTimeout(() => {
+				typeWriterEffect("你想問些甚麼嗎?", "title", 80);
+			}, 1000); 
+		};
+		function sendQuation() {
+			let inputText = document.getElementById("userInputQuation").value;
+		
+			
+			let existingElement = document.getElementById("typing-effect");
+			if (existingElement) {
+				existingElement.remove();
+			}
+		
+			
+			const displayElement = document.createElement('div');
+			displayElement.id = "typing-effect";
+			displayElement.textContent = "思考中"; // 初始文字
+			document.body.appendChild(displayElement);
+		
+			
+			let dots = 0;
+			const loadingInterval = setInterval(() => {
+				if (dots < 3) {
+					displayElement.textContent += ".";
+					dots++;
+				} else {
+					displayElement.textContent = "思考中"; // 重置
+					dots = 0;
+				}
+			}, 1000); // 每秒更新一次
+		
+			// 將資料打包成JSON
+			let jsonData = {
+				"message": inputText
+			};
+		
+			fetch("http://127.0.0.1:5000/receive", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(jsonData)
+			})
+			.then(response => response.json())
+			.then(data => {
+				clearInterval(loadingInterval); 
+				displayElement.textContent = ""; // 清空顯示區域
+				typeWriterEffect(data.result, "typing-effect", 50); 
+			})
+			.catch(error => {
+				clearInterval(loadingInterval); 
+				displayElement.textContent = "發生錯誤，請稍後再試！"; 
+				console.error("錯誤:", error);
+			});
+		}
+		</script>
+	</div>
+</body>
+</html>
