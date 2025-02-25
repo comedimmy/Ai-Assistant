@@ -1,0 +1,116 @@
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+			margin: 0;
+			background: linear-gradient(to bottom, #b3e0ff,white ); /* 由白色漸變到淺藍 */
+        }
+		h2 {
+			margin-bottom: 10px; /* 與輸入框保持一些距離 */
+		}
+		
+		input {
+			padding: 10px;
+			font-size: 16px;
+			text-align: center; /* 讓 placeholder 置中 */
+		}
+        .header {
+			background: url("../images/dd.jpg") no-repeat center center/cover;
+            width: 100%;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 30px;
+            font-weight: bold;
+            position: relative;
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: fadeInDown 0.5s ease-out forwards;
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 1); /* 添加黑色陰影 */
+        }
+		@keyframes shimmer {
+			0% { background-position: -200px 0; }
+			100% { background-position: 200px 0; }
+		}
+		@keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+		@keyframes fadeIn {
+			from { opacity: 0; transform: translateY(-10px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
+		.user-avatar {
+			width: 90px; /* 放大頭像 */
+			height: 90px;
+			border-radius: 50%;
+			margin-bottom: 10px;
+		}
+		.user-name {
+			font-weight: bold;
+			font-size: 16px;
+			color: white;
+			margin-bottom: 5px;
+		}
+		.user-email {
+			font-size: 14px;
+			color: gray;
+			margin-bottom: 15px;
+		}
+        .menu {
+            position: absolute;
+            top: 80px;
+            right: 50px;
+        }
+		.dropdown span {
+			color: white; /* 讓字是白色 */
+			font-size: 20px;
+			font-weight: bold; /* 加粗 */
+			opacity: 0; /* 初始狀態為透明 */
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 添加黑色陰影 */
+			animation: fadeIn 1s forwards; /* 設定動畫持續時間為0.5秒 */
+			animation-delay: 0.5s; /* 延遲1秒後開始動畫 */
+		}
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-right: 20px;
+        }
+		.dropdown-content {
+			display: block;
+			opacity: 0;
+			visibility: hidden;
+			position: absolute;
+			padding: 10px;
+			background-color: black;
+			min-width: 90px;
+			box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+			z-index: 0;
+			border-radius: 15px;
+			text-align: center;
+			left: 0%; /* 將選單的左邊緣對齊父容器的中點 */
+			transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+		}
+        .dropdown-content a {
+            color: white;
+            padding: 5px;
+            display: block;
+            text-decoration: none;
+        }
+		.dropdown-content a:hover {
+            color: gray;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+			opacity: 1; /* 滑鼠移入後變為完全不透明 */
+			visibility: visible; /* 顯示內容 */
+			animation: fadeIn 0.1s forwards;
+        }
+		
