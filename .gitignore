@@ -1,0 +1,63 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.envrc
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Cache and temporary files
+*.bak
+*.swp
+*.swo
+*.swn
+*.tmp
+*.~ 
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Pytest cache
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# Coverage reports
+.coverage
+htmlcov/
+*.cover
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+
+# Docker and deployment-related
+*.dockerignore
+Dockerfile
+*.tar
+*.gz
+
+# Environment variables and secrets
+*.env
+*.secrets
+
+# MacOS system files
+.DS_Store
