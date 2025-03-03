@@ -2,3 +2,5 @@
 /authorize google驗證(2025/3/3完成)	
 
 /google_logout google登出
+
+/request_user_inf 請求使用者資料
