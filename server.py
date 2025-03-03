@@ -1,10 +1,11 @@
-from flask import Flask, render_template, jsonify, redirect
+from flask import Flask, render_template, jsonify, redirect, request, session, url_for
 import requests
 import json
 from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Secret key for session handling
 
 load_dotenv()
 LINE_CLIENT_ID = os.getenv('LINE_CLIENT_ID')
