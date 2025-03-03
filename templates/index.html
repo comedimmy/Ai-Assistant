@@ -28,8 +28,8 @@
 				<!-- 如果未登入，顯示登入/註冊 -->
 				<span style="color: white; cursor: pointer;">登入/註冊</span>
 				<div class="dropdown-content">
-					<a href="{{ url_for('login_page') }}">登入</a>
-					<a href="{{ url_for('register')}}">註冊</a>
+					<a href="/Google-Login"><img src="{{url_for('static',filename='images/google.png')}}" width="65" height="60">Google登入</a>
+					<a href="/Line-Login"><img src="{{url_for('static',filename='images/LINE_logo.svg.png')}}" width="65" height="60">Line登入</a>					
 				</div>
 			{% endif %}
 		</div>

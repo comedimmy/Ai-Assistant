@@ -8,18 +8,33 @@ app = Flask(__name__)
 load_dotenv()
 LINE_CLIENT_ID = os.getenv('LINE_CLIENT_ID')
 LINE_CLIENT_SECRET = os.getenv('LINE_CLIENT_SECRET')
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
 
 #config = dotenv_values(".env")
 LINE_AUTH_URL = "https://access.line.me/oauth2/v2.1/authorize"
 LINE_TOKEN_URL = "https://api.line.me/oauth2/v2.1/token"
 LINE_PROFILE_URL = "https://api.line.me/v2/profile"
 REDIRECT_URI = "http://127.0.0.1:5000/API/callback"
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_PROFILE_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
+
 
 @app.route('/')
 def main_page():
     return render_template('index.html')
-
-@app.route('/Login')
+    
+@app.route("/Google-Login")
+def google_login():
+    """ Redirect user to Google OAuth page """
+    #redirect_uri = 'http://127.0.0.1:5000/API/callback'
+    login_url = (
+        f"{GOOGLE_AUTH_URL}?response_type=code&client_id={GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={'http://127.0.0.1:5000/login'}&scope=email%20profile&state=123456"
+    )
+    return redirect(login_url)
+@app.route('/Line-Login')
 def line_login():
     """ Redirect to LINE login page """
     login_url = f"{LINE_AUTH_URL}?response_type=code&client_id={LINE_CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope=profile%20openid%20email&state=123456"
