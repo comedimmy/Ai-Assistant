@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, redirect
+import requests
 import json
 from dotenv import load_dotenv
 import os
@@ -44,13 +45,53 @@ def line_login():
 def test():
         return json.dumps({'title':'Testing','body':'This is a test.'})
 
+@app.route('/API/callback')
+def login_info():
+    """ Handle the OAuth2 callback from LINE """
+    
+    code = request.args.get('code')
+    if not code:
+        return "Error: No code received", 400
+
+    # Exchange code for access token
+    token_data = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URI,
+        'client_id': LINE_CLIENT_ID,
+        'client_secret': LINE_CLIENT_SECRET
+    }
+    token_response = requests.post(LINE_TOKEN_URL, data=token_data)
+    token_json = token_response.json()
+
+    if 'access_token' not in token_json:
+        return "Error retrieving access token", 400
+
+    access_token = token_json['access_token']
+
+    # Get user profile data
+    headers = {'Authorization': f'Bearer {access_token}'}
+    profile_response = requests.get(LINE_PROFILE_URL, headers=headers)
+    profile_json = profile_response.json()
+    # Extract unique user ID
+    user_id = profile_json.get('userId', 'Unknown ID')
+    display_name = profile_json.get('displayName', 'Unknown User')
+    picture_url = profile_json.get('pictureUrl', '')
+   
+    # Store user info in session
+    #session['user'] = profile_json
+    # Store user info in session
+    session['user'] = {
+        'userId': user_id,  # Unique LINE user ID
+        'displayName': display_name,
+        'pictureUrl': picture_url
+    }
+    return redirect(url_for('home'))
+    
 @app.route('/API/webhook')
 def webhook():
     pass
 
-@app.route('/API/webhook')
-def callback():
-    pass
     
 if __name__ == '__main__':
     app.run(debug=True)
