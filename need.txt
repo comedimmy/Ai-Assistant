@@ -4,3 +4,17 @@
 /google_logout google登出
 
 /request_user_inf 請求使用者資料
+
+/authorize 加一個把token存入session 然後最後return改成跳轉到return redirect ("user_console")
+session['token'] = token
+
+/user_console  跳轉使用者到user_console頁面 並取得使用者資料的同時檢查有沒有登入 沒有的話踢回index 程式碼打好了
+    @app.route('/user_console')
+def user_console():
+    google = oauth.create_client('google')  
+    if 'token' in session:
+        google.token = session['token']
+        resp = google.get('userinfo')  # 用 Token 獲取使用者資訊
+        user_info = resp.json()
+        return render_template("user_console.html", name=user_info['name'], email=user_info['email'])
+    return redirect(url_for('index'))
