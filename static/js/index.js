@@ -1,95 +1,3 @@
-function sendData() {
-    let inputText = document.getElementById("userInput").value;
-
-    let jsonData = {
-        "message": inputText
-    };
-
-    fetch("http://127.0.0.1:5000/send-mqtt", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(jsonData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        const displayElement = document.createElement('div');
-        displayElement.textContent = "回應：" + JSON.stringify(data);
-        document.body.appendChild(displayElement);
-    })
-    .catch(error => console.error("錯誤:", error));
-}
-
-function typeWriterEffect(text, elementId, speed = 50) {
-    let index = 0;
-    const element = document.getElementById(elementId);
-    element.textContent = "";
-
-    function type() {
-        if (index < text.length) {
-            element.textContent += text.charAt(index);
-            index++;
-            setTimeout(type, speed);
-        }
-    }
-    type();
-}
-
-window.onload = function() {
-    setTimeout(() => {
-        typeWriterEffect("你想問些甚麼嗎?", "title", 80);
-    }, 1000);
-};
-
-function sendQuation() {
-    let inputText = document.getElementById("userInputQuation").value;
-
-    let existingElement = document.getElementById("typing-effect");
-    if (existingElement) {
-        existingElement.remove();
-    }
-
-    const displayElement = document.createElement('div');
-    displayElement.id = "typing-effect";
-    displayElement.textContent = "思考中";
-    document.body.appendChild(displayElement);
-
-    let dots = 0;
-    const loadingInterval = setInterval(() => {
-        if (dots < 3) {
-            displayElement.textContent += ".";
-            dots++;
-        } else {
-            displayElement.textContent = "思考中";
-            dots = 0;
-        }
-    }, 1000);
-
-    let jsonData = {
-        "message": inputText
-    };
-
-    fetch("http://127.0.0.1:5000/receive", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(jsonData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        clearInterval(loadingInterval);
-        displayElement.textContent = "";
-        typeWriterEffect(data.result, "typing-effect", 50);
-    })
-    .catch(error => {
-        clearInterval(loadingInterval);
-        displayElement.textContent = "發生錯誤，請稍後再試！";
-        console.error("錯誤:", error);
-    });
-}
-
 fetch('/profile')
     .then(response => response.json())
     .then(data => {
@@ -105,3 +13,19 @@ fetch('/profile')
     .catch(error => {
         console.log("發生錯誤:", error);
     });
+	
+	function toggleSubMenu() {
+        var menu = document.getElementById("colorModeMenu");
+        menu.style.display = (menu.style.display === "none" || menu.style.display === "") ? "block" : "none";
+    }
+	
+	// 切換為淺色模式
+	function changeToLightMode() {
+		document.body.classList.remove('dark-mode');
+		document.body.classList.add('light-mode');
+	}
+	// 切換為深色模式
+	function changeToDarkMode() {
+		document.body.classList.remove('light-mode');
+		document.body.classList.add('dark-mode');
+	}
