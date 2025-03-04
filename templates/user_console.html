@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>使用者主控台</title>
+</head>
+<body>
+    <h1>歡迎, {{ name }}</h1>
+    <p>你的 Email: {{ email }}</p>
+	
+		<h2 >請輸入內容</h2>
+	<input type="text" id="userInput" placeholder="輸入字串">
+    <button onclick="sendData()">發送到 Flask</button>
+	
+	<div>
+		<h2 id="title"></h2>
+		<input type="text" id="userInputQuation" placeholder="魚類知識問答">
+		<button onclick="sendQuation()">送出問題</button>
+	</div>
+	
+</body>
+<script src="{{ url_for('static', filename='js/user_console.js') }}"></script>
+</html>
