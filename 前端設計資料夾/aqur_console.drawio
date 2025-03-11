@@ -1,0 +1,88 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.1.0">
+  <diagram name="第 1 页" id="ZIoVcbXNF1Ji4ObkgELS">
+    <mxGraphModel dx="1430" dy="763" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
+          <mxGeometry x="120" y="100" width="520" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-2" value="header" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;strokeColor=#006EAF;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="120" y="100" width="520" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-3" value="logo" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="130" y="105" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-5" value="感測器資料" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="120" y="140" width="110" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-6" value="裝置狀態&lt;div&gt;(燈光為開或關等等)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="530" y="140" width="110" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-7" value="&lt;span style=&quot;color: rgb(255, 0, 0);&quot;&gt;影像內容區域&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="230" y="140" width="300" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-10" value="與AI管家聊天" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+          <mxGeometry x="540" y="480" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-11" value="拍照並傳送給AI" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="430" y="300" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-14" value="僅拍照" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="240" y="300" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-15" value="照片管理頁面" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="335" y="300" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-18" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="230" y="350" width="300" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-20" value="上次餵食時間/數量" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="241" y="360" width="105" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-24" value="AI建議下次餵食時間/數量" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="430" y="360" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-26" value="設定是否讓AI取得該水族箱的&lt;font style=&quot;color: light-dark(rgb(255, 0, 0), rgb(237, 237, 237));&quot;&gt;全權管理權&lt;/font&gt;(預設為開)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="655" y="124.79" width="155" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-27" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/png,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;clipPath=inset(30.85% 31.41% 42.02% 31.41%);" parent="1" vertex="1">
+          <mxGeometry x="530" y="140" width="58" height="29.58" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-28" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" parent="1" source="4XR9-FAHIOgRBTW7L-H8-27" target="4XR9-FAHIOgRBTW7L-H8-26" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="350" y="460" as="sourcePoint" />
+            <mxPoint x="400" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-31" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;若數值異常會&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;&lt;font style=&quot;color: light-dark(rgb(255, 0, 0), rgb(255, 255, 255));&quot;&gt;高亮紅色顯示&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;來&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;提醒使用者&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="135" y="340" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="4XR9-FAHIOgRBTW7L-H8-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="276.59000000000015" y="290" as="sourcePoint" />
+            <mxPoint x="276.59000000000015" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="yDU5uEISZrM-xEQ3RpaC-38" value="距離下次餵食的所剩時間" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="249" y="420" width="89" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="yDU5uEISZrM-xEQ3RpaC-39" value="從創建以來到現在的餵食時間" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="427.5" y="420" width="95" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="yDU5uEISZrM-xEQ3RpaC-41" value="完整歷史紀錄" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="327.5" y="460" width="105" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="yDU5uEISZrM-xEQ3RpaC-42" value="查詢餵食&lt;div&gt;歷史紀錄&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="342" y="530" width="76" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yDU5uEISZrM-xEQ3RpaC-43" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="yDU5uEISZrM-xEQ3RpaC-42" target="yDU5uEISZrM-xEQ3RpaC-41">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="570" as="sourcePoint" />
+            <mxPoint x="470" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

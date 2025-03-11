@@ -1,0 +1,67 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.1.0">
+  <diagram name="第 1 页" id="vLFrvVcVre5cBoKKlyvF">
+    <mxGraphModel dx="1830" dy="1163" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
+          <mxGeometry x="-200" y="-140" width="500" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-2" value="Header" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="-200" y="-140" width="500" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-3" value="Logo" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-200" y="-135" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+          <mxGeometry x="-200" y="-100" width="150" height="410" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-5" value="帳戶管理&lt;div&gt;&lt;br&gt;&lt;div&gt;語音命令與AI設定&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;安全性&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;裝置轉移&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;等等設定待討論&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;html=1;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=16;labelPosition=center;verticalLabelPosition=middle;fontColor=default;" parent="1" vertex="1">
+          <mxGeometry x="-190" y="-85" width="140" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-6" value="此頁面與AI聊天視窗一樣採用&lt;div&gt;&lt;font style=&quot;color: light-dark(rgb(255, 0, 0), rgb(237, 237, 237));&quot;&gt;雙欄式設計&lt;/font&gt; 使得介面直觀且簡潔&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-50" y="-180" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-13" value="點選父類別時顯示其子下的設定" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="50" y="70" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-14" value="後續更改AI模型的地方" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-386" y="-45" width="166" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-15" value="" style="edgeStyle=none;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;endSize=8;startSize=8;rounded=0;fontSize=12;curved=1;startFill=0;dashed=1;entryX=0;entryY=0.171;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="NTF8A5eLQwNvnwAZHbFB-14" target="NTF8A5eLQwNvnwAZHbFB-4" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <mxPoint x="-360" y="-20" as="sourcePoint" />
+            <mxPoint x="-220" y="-20" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-16" value="使用者名稱在這可以更改" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-400" y="-85" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-17" value="" style="edgeStyle=none;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;endSize=8;startSize=8;rounded=0;fontSize=12;curved=1;startFill=0;dashed=1;entryX=0;entryY=0.073;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="NTF8A5eLQwNvnwAZHbFB-16" target="NTF8A5eLQwNvnwAZHbFB-4" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <mxPoint x="-280" y="-100" as="sourcePoint" />
+            <mxPoint x="-220" y="-105" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-18" value="登錄歷史紀錄等等" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-355" y="-5" width="135" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-19" value="" style="edgeStyle=none;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;endSize=8;startSize=8;rounded=0;fontSize=12;curved=1;startFill=0;dashed=1;entryX=0;entryY=0.268;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="NTF8A5eLQwNvnwAZHbFB-18" target="NTF8A5eLQwNvnwAZHbFB-4" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <mxPoint x="-280" as="sourcePoint" />
+            <mxPoint x="-210" y="5" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-21" value="" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="-92" width="20" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF8A5eLQwNvnwAZHbFB-23" value="使用者頭像" style="text;strokeColor=none;fillColor=none;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="300" y="-100" width="100" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
