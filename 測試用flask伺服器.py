@@ -4,6 +4,7 @@ from flask_cors import CORS  # 允許跨來源請求 (讓前端可以存取 Flas
 from flask import Flask, request, jsonify
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
+import requests
 import os
 import random
 import openai
@@ -11,9 +12,10 @@ import paho.mqtt.client as mqtt
 from flask import Flask, redirect, url_for, session,render_template
 from authlib.integrations.flask_client import OAuth
 from datetime import timedelta
-
-# dotenv setup
+import json
 from dotenv import load_dotenv
+from aqur_sql import save_user_google,get_user_by_name,update_user_name,get_user_by_google_id,save_photo_url
+import base64
 
 load_dotenv()
 # 設定路徑
@@ -23,6 +25,7 @@ os.chdir("f:/water")
 app = Flask(__name__)
 # Session config
 app.secret_key = os.getenv("APP_SECRET_KEY")
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 設定 session 存活時間（1 小時）
 app.config['SESSION_COOKIE_NAME'] = 'google-login-session'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -42,7 +45,7 @@ google = oauth.register(
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
 )
 
-
+app.permanent_session_lifetime = timedelta(minutes=30)
 
 
 
@@ -152,12 +155,8 @@ def send_mqtt():
         return jsonify({"error": str(e)}), 500
 
 
-MQTT_TOPIC_light ="aqar/light"
-MQTT_TOPIC_fan ="aqar/fan"
-MQTT_TOPIC_temperature ="aqar/sensor/water_temperature"
-MQTT_TOPIC_feeder="aqar/fish_feeder"
-
 # 定義接收 POST 請求的URL
+
 @app.route('/receive', methods=['POST'])
 def receive_data():
     # 獲取從 PHP 發送過來的資料
@@ -196,9 +195,6 @@ def receive_data():
         "result": main_result,
     })
 
-
-
-
 @app.route('/')
 def index():
     if 'profile' in session:
@@ -217,12 +213,21 @@ def hello_world():
 def login_page():
     return render_template("login.html")  # login.html
 
+@app.route("/test")
+def test():
+    return render_template("test.html")  # login.html
+
+
 @app.route("/back")
 def back():
     return render_template("index.html")  # index.html
 
-@app.route('/login')
-def login():
+@app.route('/register')
+def register():
+    return redirect('/register.html')  #register.html
+
+@app.route('/Google-Login')
+def google_login():
     google = oauth.create_client('google')  # create the google oauth client
     redirect_uri = url_for('authorize', _external=True)
     return google.authorize_redirect(redirect_uri)
@@ -230,18 +235,109 @@ def login():
 
 @app.route('/authorize')
 def authorize():
-    google = oauth.create_client('google')  # create the google oauth client
-    token = google.authorize_access_token()  # Access token from google (needed to get user info)
-    resp = google.get('userinfo')  # userinfo contains stuff u specificed in the scrope
-    user_info = resp.json()
-    user = oauth.google.userinfo()  # uses openid endpoint to fetch user info
-    # Here you use the profile/user data that you got and query your database find/register the user
-    # and set ur own data in the session not the profile from google
+    google = oauth.create_client('google')
+    token = google.authorize_access_token()
+    session['token'] = token
+    user_info = google.get('userinfo').json()
     session['profile'] = user_info
-    session.permanent = True  # make the session permanant so it keeps existing after broweser gets closed
-    return redirect('/')
+    session.permanent = True  
 
-@app.route('/profile')
+    google_user_id = user_info['id']  # Google 的 userID
+    user_email = user_info['email']
+    user_name = user_info['name']  # 這是 Google 預設的名稱，但可能已修改過
+    # **檢查資料庫是否已有這個 userID**
+    existing_user = get_user_by_google_id(google_user_id)
+
+    if existing_user:
+        # **已有帳戶，使用資料庫中的名稱**
+        session['user_id'] = existing_user['userID']
+        session['user_email'] = existing_user['Email']
+        session['user_name'] = existing_user['UserName']  # 使用者修改過的名稱
+    else:
+        # **新使用者，存入資料庫**
+        response = requests.post(
+            "http://127.0.0.1:5000/api/save_user", 
+            json={"userID": google_user_id, "name": user_name, "email": user_email, "login_type": "Google"}
+        )
+        
+        if response.status_code == 200:
+            user_id = response.json().get("user_id")
+            session['user_id'] = user_id
+            session['user_email'] = user_email
+            session['user_name'] = user_name  # 這裡存入 Google 預設名稱
+        else:
+            return redirect(url_for('index')) 
+
+    return redirect("user_console")
+
+# 查詢使用者資料 API
+@app.route('/get_user_data', methods=['GET'])
+def get_user_data():
+    # **直接從 session 取得 user_name**
+    user_name = session.get("user_name")
+
+    if not user_name:
+        return jsonify({"error": "未登入，請重新登入"}), 401  # 未登入時返回 401 錯誤
+
+    user_data = get_user_by_name(user_name)
+
+    if user_data:
+        return jsonify(user_data)  # 回傳使用者資料
+    else:
+        return jsonify({"error": "找不到該使用者"}), 404
+    
+# 修改使用者資料API
+@app.route('/update_user_name', methods=['POST'])
+def update_user_name_api():
+    if "user_name" not in session:
+        return jsonify({"error": "未登入"}), 401
+
+    data = request.json
+    new_user_name = data.get("new_name")
+
+    if not new_user_name:
+        return jsonify({"error": "請輸入新的名稱"}), 400
+
+    # 呼叫資料庫函數更新名稱
+    success = update_user_name(session["user_name"], new_user_name)
+
+    if success:
+        session["user_name"] = new_user_name  # 更新 session 中的使用者名稱
+        return jsonify({"message": "使用者名稱更新成功", "new_name": new_user_name})
+    else:
+        return jsonify({"error": "更新失敗"}), 500
+
+#新增使用者資料API
+@app.route("/api/save_user", methods=["POST"])
+def save_user():
+    data = request.json  
+    if not data or "name" not in data:
+        return jsonify({"message": "Invalid data", "status": "error"}), 400
+
+    # 判斷登入方式
+    if "email" in data:  # 如果有 email 就是 Google 登入
+        login_type = "Google"
+        user_id = save_user_google(data["userID"],data["name"], data["email"], login_type)
+    elif "userId" in data:  # 如果有 userId 就是 LINE 登入
+        login_type = "LINE"
+        user_id = save_user_line(data["name"], data["userId"], login_type) #還沒寫呢
+    else:
+        return jsonify({"message": "Invalid data", "status": "error"}), 400
+
+    return jsonify({"message": "User saved", "status": "success", "user_id": user_id})
+
+@app.route('/user_console')
+def user_console():
+    google = oauth.create_client('google')  
+    if 'token' in session:
+        google.token = session['token']
+        resp = google.get('userinfo')  # 用 Token 獲取使用者資訊
+        user_info = resp.json()
+        camera_url = "http://192.168.137.128:8081/video"  # 攝影機的影像URL
+        return render_template("user_console.html",user_picture = user_info['picture'],name=user_info['name'], email=user_info['email'],video_url=camera_url)
+    return redirect(url_for('index'))
+
+@app.route('/profile') #測試用
 def profile():
     if 'profile' in session:  # 如果 session 中有 'profile' 資料，代表使用者已登入
         user_info = session['profile']
@@ -255,6 +351,32 @@ def logout():
     for key in list(session.keys()):
         session.pop(key)
     return redirect('/')
+
+@app.route('/save_snapshot', methods=['POST'])
+def save_snapshot():
+    # 從請求中獲取圖片數據
+    data = request.get_json()
+    image_data = data.get('image')
+    aquarium_id = data.get('aquarium_id')  # 假設你會從前端傳遞 AquariumID
+
+    # 去除圖片數據中的 "data:image/png;base64," 部分
+    image_data = image_data.split(',')[1]
+
+    # 解碼 base64 圖片
+    image_bytes = base64.b64decode(image_data)
+
+    # 儲存圖片到伺服器
+    image_path = os.path.join('static', 'snapshots', 'snapshot.png')
+    os.makedirs(os.path.dirname(image_path), exist_ok=True)
+    
+    with open(image_path, 'wb') as f:
+        f.write(image_bytes)
+
+    # 儲存圖片URL到資料庫
+    photo_url = f"http://localhost:5000/{image_path}"  # 生成圖片的URL
+    save_photo_url(aquarium_id, photo_url)  # 呼叫資料庫函式
+
+    return jsonify({'message': '圖片儲存成功', 'image_path': image_path})
 
 if __name__ == '__main__':
     app.run(debug=True)
