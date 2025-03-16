@@ -2,22 +2,46 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/user_console.css') }}">
     <title>使用者主控台</title>
+	<div class="header">AI管家</div>
 </head>
 <body>
+	<input type="text" id="userNameBox" readonly>
+	<button id="editButton" onclick="toggleEdit()">修改</button>
+	<button onclick="getUserData()">查詢使用者資料</button>
+	<!-- "新增水族箱" 按鈕，放在 header 下方 -->
+	<div id="add-aquarium-container">
+		<a href="/add_aqur" id="add-aquarium-btn">
+			+
+		</a>
+	</div>
+	<a href="{{ url_for('index') }}">
+        <img id="logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+    </a>
     <h1>歡迎, {{ name }}</h1>
     <p>你的 Email: {{ email }}</p>
+	<img src="{{ user_picture }}" alt="使用者頭像" width="100" height="100" class="profile-pic">
+	    <!-- 聊天視窗 -->
+    <div id="chat-box">
+        <div id="chat-box-header" onclick="toggleChatBox()">AI管家</div>
+        <div id="chat-box-body"></div>
+        <div id="chat-box-footer">
+            <input type="text" id="chat-input" placeholder="輸入訊息..." onkeydown="handleKeyPress(event)">
+            <button id="send-button" onclick="sendChatMessage()">送出</button>
+        </div>
+    </div>
+    <h1>實時影像</h1>
+	<div id="capture-area">
+		<img id="video" src="{{ video_url }}" alt="Video Stream" />
 	
-		<h2 >請輸入內容</h2>
-	<input type="text" id="userInput" placeholder="輸入字串">
-    <button onclick="sendData()">發送到 Flask</button>
+	<button id="capture">拍照</button>
+	<canvas id="canvas" style="display:none;"></canvas>
 	
-	<div>
-		<h2 id="title"></h2>
-		<input type="text" id="userInputQuation" placeholder="魚類知識問答">
-		<button onclick="sendQuation()">送出問題</button>
+    <button id="chat-button" onclick="toggleChatBox()">與AI管家聊天</button>
 	</div>
-	
 </body>
 <script src="{{ url_for('static', filename='js/user_console.js') }}"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </html>
