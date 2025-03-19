@@ -32,15 +32,24 @@
             <button id="send-button" onclick="sendChatMessage()">送出</button>
         </div>
     </div>
-    <h1>實時影像</h1>
-	<div id="capture-area">
-		<img id="video" src="{{ video_url }}" alt="Video Stream" />
-	
-	<button id="capture">拍照</button>
-	<canvas id="canvas" style="display:none;"></canvas>
-	
     <button id="chat-button" onclick="toggleChatBox()">與AI管家聊天</button>
 	</div>
+    <h2>我的水族箱</h2>
+    <div class="aquarium-container">
+        {% for aquarium in aquariums %}
+        <div class="aquarium">
+            <img src="{{ url_for('static', filename='images/aqur_image.jpg') }}" alt="水族箱圖片">
+            <p>{{ aquarium.aquarium_name }}</p>
+            <div class="menu">
+                <button onclick="openMenu('{{ aquarium.aquarium_id }}')">⋮</button>
+                <div id="menu-{{ aquarium.aquarium_id }}" class="dropdown-menu">
+
+                </div>                    <button onclick="editAquariumName('{{ aquarium.aquarium_id }}')">修改名稱</button>
+                    <button onclick="deleteAquarium('{{ aquarium.aquarium_id }}')">刪除</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </body>
 <script src="{{ url_for('static', filename='js/user_console.js') }}"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
