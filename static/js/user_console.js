@@ -119,36 +119,13 @@ function getUserData() {
             alert("錯誤：" + data.error);
         } else {
             alert(`使用者資訊：
-            姓名：${data.UserName}
-            Email：${data.Email || "N/A"}
-            註冊時間：${data.LastLoginTime}`);
+            姓名：${data.nickname}
+			登入方式:${data.Login_type}
+            註冊時間：${data.Last_login}`);
         }
     })
     .catch(error => console.error("發生錯誤", error));
 }
-
-// 從 URL 擷取水族箱 ID
-const urlParams = new URLSearchParams(window.location.search);
-const aquariumId = urlParams.get('aquarium_id');
-
-// 確保取得 ID 並在 API 請求中傳送
-document.getElementById('capture').addEventListener('click', function() {
-    html2canvas(document.getElementById('capture-area'), { useCORS: true }).then(function(canvas) {
-        const imageData = canvas.toDataURL("image/png");
-
-        fetch('/save_snapshot', {
-            method: 'POST',
-            body: JSON.stringify({ image: imageData, aquarium_id: aquariumId }),  // 傳送水族箱 ID
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => console.log('圖片已儲存', data))
-        .catch(error => console.error('圖片儲存失敗', error));
-    });
-});
-
-
-
 
 
 let isEditing = false;
@@ -188,11 +165,94 @@ function toggleEdit() {
 
 // **載入當前的 user_name**
 window.onload = function() {
-    fetch("/get_user_data")  // 這個 API 在之前已經寫過
+    console.log("頁面載入完成，開始獲取使用者資料和水族箱列表");
+
+    // 獲取使用者資料
+    fetch("/get_user_data")
     .then(response => response.json())
     .then(data => {
-        if (data.UserName) {
-            document.getElementById("userNameBox").value = data.UserName;
+        if (data.nickname) {
+            document.getElementById("userNameBox").value = data.nickname;
+        }
+    })
+    .catch(error => {
+        console.error("獲取使用者資料失敗：", error);
+    });
+	
+};
+
+
+// 顯示或隱藏選單
+function openMenu(aquarium_id) {
+    const menu = document.getElementById(`menu-${aquarium_id}`);
+    menu.classList.toggle('active');  // 切換選單的顯示狀態
+}
+
+$(document).ready(function() {
+    $.ajax({
+        url: "/get_user_aquariums",
+        type: "GET",
+        success: function(response) {
+            if (response.error) {
+                alert(response.error);
+            } else {
+                response.forEach(function(aquarium) {
+                    var aquariumContainer = $('<div class="aquarium-container"></div>');
+                    var aquariumImage = $('<img src="{{ url_for("static", filename="image/aqur_image.jpg") }}" class="aquarium-image">');
+                    var aquariumName = $('<div class="aquarium-name"><span class="name-text">' + aquarium.aquarium_name + '</span><span class="options">⋮</span></div>');
+                    
+                    // 顯示水族箱詳細資訊
+                    aquariumContainer.append(aquariumImage);
+                    aquariumContainer.append(aquariumName);
+                    
+                    $('.aquariums-list').append(aquariumContainer);  // 假設有一個容器顯示水族箱
+                });
+            }
+        },
+        error: function(xhr) {
+            alert('無法獲取水族箱資料');
         }
     });
-};
+});
+
+// 修改水族箱名稱
+function editAquariumName(aquarium_id) {
+    const newName = prompt("請輸入新的水族箱名稱:");
+    if (newName) {
+        // 呼叫後端 API 更新水族箱名稱
+        fetch("/update_aquarium_name/${aquarium_id}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ new_name: newName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("水族箱名稱已更新！");
+                location.reload();  // 重新載入頁面以顯示更新後的名稱
+            } else {
+                alert("更新失敗，請稍後再試！");
+            }
+        });
+    }
+}
+
+// 刪除水族箱
+function deleteAquarium(aquarium_id) {
+    if (confirm("確定要刪除這個水族箱嗎？")) {
+        fetch("/delete_aquarium/${aquarium_id}", {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("水族箱已刪除！");
+                location.reload();  // 重新載入頁面以顯示刪除後的結果
+            } else {
+                alert("刪除失敗，請稍後再試！");
+            }
+        });
+    }
+}
