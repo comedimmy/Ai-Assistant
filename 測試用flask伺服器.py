@@ -14,9 +14,8 @@ from authlib.integrations.flask_client import OAuth
 from datetime import timedelta
 import json
 from dotenv import load_dotenv
-from aqur_sql import save_user_google,get_user_by_name,update_user_name,get_user_by_google_id,save_photo_url
 import base64
-
+import aqur_sql
 load_dotenv()
 # 設定路徑
 os.chdir("f:/water")
@@ -217,14 +216,13 @@ def login_page():
 def test():
     return render_template("test.html")  # login.html
 
-
 @app.route("/back")
 def back():
     return render_template("index.html")  # index.html
 
-@app.route('/register')
-def register():
-    return redirect('/register.html')  #register.html
+@app.route('/add_aqur')
+def add_aqur():
+    return render_template('add_aqur.html')  #add_aqur.html
 
 @app.route('/Google-Login')
 def google_login():
@@ -245,19 +243,23 @@ def authorize():
     google_user_id = user_info['id']  # Google 的 userID
     user_email = user_info['email']
     user_name = user_info['name']  # 這是 Google 預設的名稱，但可能已修改過
-    # **檢查資料庫是否已有這個 userID**
-    existing_user = get_user_by_google_id(google_user_id)
+    # 檢查資料庫是否已有這個 userID
+    existing_user = aqur_sql.get_user_by_google_id(google_user_id)
 
     if existing_user:
-        # **已有帳戶，使用資料庫中的名稱**
-        session['user_id'] = existing_user['userID']
-        session['user_email'] = existing_user['Email']
-        session['user_name'] = existing_user['UserName']  # 使用者修改過的名稱
+        # 已有帳戶，使用資料庫中的名稱
+        session['user_id'] = existing_user['user_id']
+        session['user_email'] = user_info['email']
+        session['user_name'] = existing_user['nickname']  # 使用者修改過的名稱
+        response = requests.post( 
+            "http://127.0.0.1:5000/api/save_user", 
+            json={"user_id": existing_user['user_id'], "nickname": existing_user['nickname'], "login_type": "Google"}
+        )# 為了更新使用者的最後登入時間
     else:
-        # **新使用者，存入資料庫**
+        # 新使用者，存入資料庫
         response = requests.post(
             "http://127.0.0.1:5000/api/save_user", 
-            json={"userID": google_user_id, "name": user_name, "email": user_email, "login_type": "Google"}
+            json={"user_id": google_user_id, "nickname": user_name, "login_type": "Google"}
         )
         
         if response.status_code == 200:
@@ -279,7 +281,7 @@ def get_user_data():
     if not user_name:
         return jsonify({"error": "未登入，請重新登入"}), 401  # 未登入時返回 401 錯誤
 
-    user_data = get_user_by_name(user_name)
+    user_data = aqur_sql.get_user_by_name(user_name)
 
     if user_data:
         return jsonify(user_data)  # 回傳使用者資料
@@ -299,7 +301,7 @@ def update_user_name_api():
         return jsonify({"error": "請輸入新的名稱"}), 400
 
     # 呼叫資料庫函數更新名稱
-    success = update_user_name(session["user_name"], new_user_name)
+    success = aqur_sql.update_user_name(session["user_name"], new_user_name)
 
     if success:
         session["user_name"] = new_user_name  # 更新 session 中的使用者名稱
@@ -307,22 +309,22 @@ def update_user_name_api():
     else:
         return jsonify({"error": "更新失敗"}), 500
 
-#新增使用者資料API
 @app.route("/api/save_user", methods=["POST"])
 def save_user():
-    data = request.json  
-    if not data or "name" not in data:
+    data = request.json  # 這裡會獲取傳遞過來的 JSON 資料
+    if not data or "user_id" not in data or "nickname" not in data or "login_type" not in data:
         return jsonify({"message": "Invalid data", "status": "error"}), 400
 
-    # 判斷登入方式
-    if "email" in data:  # 如果有 email 就是 Google 登入
-        login_type = "Google"
-        user_id = save_user_google(data["userID"],data["name"], data["email"], login_type)
-    elif "userId" in data:  # 如果有 userId 就是 LINE 登入
-        login_type = "LINE"
-        user_id = save_user_line(data["name"], data["userId"], login_type) #還沒寫呢
+    user_id = data["user_id"]
+    nickname = data["nickname"]
+    login_type = data["login_type"]
+
+    if login_type == "Google":
+        user_id = aqur_sql.save_user_google(user_id, nickname, login_type)
+    elif login_type == "Line":
+        user_id = aqur_sql.save_user_line(nickname, user_id, login_type)
     else:
-        return jsonify({"message": "Invalid data", "status": "error"}), 400
+        return jsonify({"message": "Invalid login type", "status": "error"}), 400
 
     return jsonify({"message": "User saved", "status": "success", "user_id": user_id})
 
@@ -333,8 +335,9 @@ def user_console():
         google.token = session['token']
         resp = google.get('userinfo')  # 用 Token 獲取使用者資訊
         user_info = resp.json()
-        camera_url = "http://192.168.137.128:8081/video"  # 攝影機的影像URL
-        return render_template("user_console.html",user_picture = user_info['picture'],name=user_info['name'], email=user_info['email'],video_url=camera_url)
+        user_id = user_info['id']
+        aquariums = aqur_sql.get_aquariums_by_user(user_id)  # 🔹 呼叫函式查詢水族箱資料
+        return render_template("user_console.html",user_picture = user_info['picture'],name=user_info['name'], email=user_info['email'],aquariums=aquariums)
     return redirect(url_for('index'))
 
 @app.route('/profile') #測試用
@@ -374,9 +377,98 @@ def save_snapshot():
 
     # 儲存圖片URL到資料庫
     photo_url = f"http://localhost:5000/{image_path}"  # 生成圖片的URL
-    save_photo_url(aquarium_id, photo_url)  # 呼叫資料庫函式
+    aqur_sql.save_photo_url(aquarium_id, photo_url)  # 呼叫資料庫函式
 
     return jsonify({'message': '圖片儲存成功', 'image_path': image_path})
+
+@app.route('/get_photos', methods=['GET'])
+def get_photos():
+    aquarium_id = request.args.get('aquarium_id')  # 從 GET 請求取得 aquarium_id
+    if not aquarium_id:
+        return jsonify({"error": "請提供 AquariumID"}), 400
+
+    photos = aqur_sql.get_photos_by_aquarium_id(aquarium_id)
+    if photos:
+        return jsonify(photos)  # 以 JSON 格式回傳照片資訊
+    else:
+        return jsonify({"message": "找不到照片"}), 404
+
+# 刪除照片的 API
+@app.route('/delete_photo', methods=['POST'])
+def delete_photo():
+    photo_id = request.json.get("photo_id")  # 從前端接收 photo_id
+
+    if not photo_id:
+        return jsonify({"error": "請提供 photo_id"}), 400
+
+    success = aqur_sql.delete_photo(photo_id)
+    if success:
+        return jsonify({"message": "照片刪除成功"}), 200
+    else:
+        return jsonify({"error": "刪除照片失敗"}), 500
+
+@app.route('/picture_console')
+def picture_console():
+    aquarium_id = request.args.get('aquarium_id', 1)  # 預設顯示 aquarium_id=1
+    photos = aqur_sql.get_photos_by_aquarium_id(aquarium_id)
+    return render_template('picture_console.html', photos=photos)
+
+@app.route("/add_aquarium", methods=["GET", "POST"])
+def add_aquarium_page():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        aquarium_name = request.form["aquarium_name"]
+        fish_species = request.form["fish_species"]
+        fish_amount = request.form["fish_amount"]
+        ai_model = request.form["AI_model"]
+        user_id = session["user_id"]
+
+        success = aqur_sql.add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model)
+        
+        if success:
+            return redirect(url_for("user_console"))
+        else:
+            return "資料庫錯誤，請稍後再試！", 500
+
+    return render_template("add_aquarium.html")
+
+@app.route('/delete_aquarium/<aquarium_id>', methods=['DELETE'])
+def delete_aquarium(aquarium_id):
+    # 呼叫 SQL 函式刪除水族箱
+    success = aqur_sql.delete_aquarium(aquarium_id)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "message": "Failed to delete aquarium"}), 500
+    
+@app.route('/get_user_aquariums', methods=['GET'])
+def get_user_aquariums():
+    if 'user_id' not in session:
+        return jsonify({'error': '未登入'}), 401
+
+    user_id = session['user_id']
+
+    try:
+        aquariums = aqur_sql.get_aquariums_by_user(user_id)  # 執行查詢的 SQL 函式
+        return jsonify(aquariums)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/update_aquarium_name/<aquarium_id>', methods=['POST'])
+def update_aquarium_name(aquarium_id):
+    new_name = request.json.get('new_name')
+    if not new_name:
+        return jsonify({"success": False, "message": "Name is required"}), 400
+    
+    # 呼叫 SQL 函式更新水族箱名稱
+    success = aqur_sql.update_aquarium_name(aquarium_id, new_name)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "message": "Failed to update aquarium name"}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
