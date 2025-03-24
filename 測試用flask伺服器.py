@@ -155,7 +155,6 @@ def send_mqtt():
 
 
 # 定義接收 POST 請求的URL
-
 @app.route('/receive', methods=['POST'])
 def receive_data():
     # 獲取從 PHP 發送過來的資料
@@ -194,32 +193,25 @@ def receive_data():
         "result": main_result,
     })
 
+# 主頁
 @app.route('/')
 def index():
     if 'profile' in session:
         # 使用者已登入，將資料傳給前端
         user_info = session['profile']
-        return render_template('index.html', user_info=user_info)
+        user_id = session['user_id']
+        user_data=aqur_sql.get_user_by_id(user_id)
+        return render_template('index.html', user_info=user_info,user_data=user_data)
     else:
         # 使用者未登入，顯示登入/註冊選項
         return render_template('index.html', user_info=None)
 
-def hello_world():
-    email = dict(session)['profile']['email']
-    return f'Hello, you are logge in as {email}!'
-
-@app.route("/login-page")
-def login_page():
-    return render_template("login.html")  # login.html
-
-@app.route("/test")
-def test():
-    return render_template("test.html")  # login.html
-
+# 返回主頁
 @app.route("/back")
 def back():
     return render_template("index.html")  # index.html
 
+# 新增水族箱 
 @app.route('/add_aqur')
 def add_aqur():
     return render_template('add_aqur.html')  #add_aqur.html
@@ -240,11 +232,11 @@ def authorize():
     session['profile'] = user_info
     session.permanent = True  
 
-    google_user_id = user_info['id']  # Google 的 userID
+    user_id = user_info['id']  # Google 的 userID
     user_email = user_info['email']
     user_name = user_info['name']  # 這是 Google 預設的名稱，但可能已修改過
     # 檢查資料庫是否已有這個 userID
-    existing_user = aqur_sql.get_user_by_google_id(google_user_id)
+    existing_user = aqur_sql.get_user_by_id(user_id)
 
     if existing_user:
         # 已有帳戶，使用資料庫中的名稱
@@ -259,11 +251,10 @@ def authorize():
         # 新使用者，存入資料庫
         response = requests.post(
             "http://127.0.0.1:5000/api/save_user", 
-            json={"user_id": google_user_id, "nickname": user_name, "login_type": "Google"}
+            json={"user_id": user_id, "nickname": user_name, "login_type": "Google"}
         )
         
         if response.status_code == 200:
-            user_id = response.json().get("user_id")
             session['user_id'] = user_id
             session['user_email'] = user_email
             session['user_name'] = user_name  # 這裡存入 Google 預設名稱
@@ -275,13 +266,13 @@ def authorize():
 # 查詢使用者資料 API
 @app.route('/get_user_data', methods=['GET'])
 def get_user_data():
-    # **直接從 session 取得 user_name**
+    # **直接從 session 取得 user_id**
+    user_id = session.get("user_id")
     user_name = session.get("user_name")
-
     if not user_name:
         return jsonify({"error": "未登入，請重新登入"}), 401  # 未登入時返回 401 錯誤
 
-    user_data = aqur_sql.get_user_by_name(user_name)
+    user_data = aqur_sql.get_user_by_id(user_id)
 
     if user_data:
         return jsonify(user_data)  # 回傳使用者資料
@@ -301,7 +292,7 @@ def update_user_name_api():
         return jsonify({"error": "請輸入新的名稱"}), 400
 
     # 呼叫資料庫函數更新名稱
-    success = aqur_sql.update_user_name(session["user_name"], new_user_name)
+    success = aqur_sql.update_user_name(session["user_id"], new_user_name)
 
     if success:
         session["user_name"] = new_user_name  # 更新 session 中的使用者名稱
@@ -419,18 +410,24 @@ def add_aquarium_page():
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        aquarium_name = request.form["aquarium_name"]
-        fish_species = request.form["fish_species"]
-        fish_amount = request.form["fish_amount"]
-        ai_model = request.form["AI_model"]
-        user_id = session["user_id"]
+        data = request.get_json()  # 解析 JSON 資料
 
-        success = aqur_sql.add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model)
+        aquarium_name = data.get("aquarium_name")
+        fish_species = data.get("fish_species")
+        fish_amount = data.get("fish_amount")
+        ai_model = data.get("AI_model")
+        user_id = session['user_id']
+        min_temp = data.get("min_temp")
+        max_temp = data.get("max_temp")
+        feeding_frequency = data.get("feeding_frequency")
+        feeding_amount = data.get("feeding_amount")
+
+        success = aqur_sql.add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model,min_temp,max_temp,feeding_frequency,feeding_amount)
         
         if success:
-            return redirect(url_for("user_console"))
+            return jsonify({"status": "success", "message": "水族箱資料已成功新增！"}), 200
         else:
-            return "資料庫錯誤，請稍後再試！", 500
+            return jsonify({"status": "error", "message": "資料庫錯誤，請稍後再試！"}), 500
 
     return render_template("add_aquarium.html")
 
@@ -442,6 +439,29 @@ def delete_aquarium(aquarium_id):
         return jsonify({"success": True})
     else:
         return jsonify({"success": False, "message": "Failed to delete aquarium"}), 500
+    
+@app.route('/aquarium_details/<aquarium_id>', methods=['GET'])
+def aquarium_details(aquarium_id):
+    # 根據 aquarium_id 查詢資料庫，並返回水族箱的詳細資料
+    aquarium = aqur_sql.get_aquarium_by_id(aquarium_id)
+    if aquarium:
+        return jsonify({
+            'aquarium_id': aquarium['aquarium_id'],
+            'fish_species': aquarium['fish_species'],
+            'fish_amount': aquarium['fish_amount'],
+            'feed_amount': aquarium['feed_amount'],
+            'min_temp': aquarium['lowest_temperature'],
+            'max_temp': aquarium['highest_temperature'],
+            'last_update': aquarium['Last_update'],
+            'light_status': aquarium['light_status'],
+            'temperature': aquarium['temperature'],
+            'water_level': aquarium['water_level'],
+            'AI_model': aquarium['AI_model'],
+            'QR_code': aquarium['QR_code'],
+            'TDS': aquarium['TDS'],
+        })
+    else:
+        return jsonify({'error': '水族箱資料未找到'}), 404
     
 @app.route('/get_user_aquariums', methods=['GET'])
 def get_user_aquariums():
@@ -469,6 +489,74 @@ def update_aquarium_name(aquarium_id):
     else:
         return jsonify({"success": False, "message": "Failed to update aquarium name"}), 500
 
+
+@app.route('/get_aquarium_settings', methods=['POST'])
+def get_aquarium_settings_api():
+    data = request.get_json()
+    fish_species = data.get('fish_species')
+    fish_amount = data.get('fish_amount')
+    print(fish_species,fish_amount)
+    if not fish_species or not fish_amount:
+        return jsonify({"error": "缺少必要的參數"}), 400
+
+    settings = get_aquarium_parameters(fish_species, fish_amount)
+    return jsonify(settings)
+
+def get_aquarium_parameters(fish_species, fish_amount):
+    # 修改 prompt，使其要求返回簡潔的格式
+    prompt = f"根據魚種「{fish_species}」和魚隻數量「{fish_amount}」，僅返回以下水族箱的設置參數，且不需要單位(包含次/天)，格式為：\n" \
+             "最低溫: XX\n" \
+             "最高溫: XX\n" \
+             "餵食頻率: X 次/天\n" \
+             "每次餵食的數量: X 克"
+
+    try:
+        # 向 OpenAI API 發送請求
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # 使用 ChatGPT 模型
+            messages=[{"role": "system", "content": "你是水族箱設置專家。"},
+                      {"role": "user", "content": prompt}],
+            max_tokens=100,  # 限制生成的最大字數
+            temperature=0.7,  # 控制創意和隨機性的數值
+        )
+        
+        # 解析回傳的結果，並返回需要的參數
+        response_text = response['choices'][0]['message']['content'].strip()
+
+        # 打印回應結果，查看格式
+        print(f"API 回應: {response_text}")
+
+        # 解析簡潔的格式
+        parameters = {}
+        feeding_per_fish = None  # 每隻魚的餵食量
+
+        for line in response_text.split("\n"):
+            if "最低溫" in line:
+                parameters["min_temp"] = line.split(":")[1].strip()
+            elif "最高溫" in line:
+                parameters["max_temp"] = line.split(":")[1].strip()
+            elif "餵食頻率" in line:
+                parameters["feeding_frequency"] = line.split(":")[1].strip()
+            elif "每次餵食的數量" in line:
+                # 提取餵食量並移除單位
+                feeding_amount_str = line.split(":")[1].strip()
+                feeding_per_fish = float(''.join(filter(str.isdigit, feeding_amount_str)))  # 去除單位後轉換為浮點數
+                parameters["feeding_amount"] = feeding_per_fish  # 設定每隻魚的餵食量
+
+        # 根據魚隻數量計算總餵食量
+        if feeding_per_fish is not None and fish_amount > 0:
+            total_feeding_amount = feeding_per_fish * fish_amount
+            parameters["feeding_amount"] = total_feeding_amount
+
+        return parameters
+
+    except Exception as e:
+        # 回傳錯誤訊息
+        return {"error": str(e)}
+
+@app.route('/aqur_console')
+def aqur_console():
+    return render_template('aqur_console.html')  #aqur_console.html
 
 if __name__ == '__main__':
     app.run(debug=True)
