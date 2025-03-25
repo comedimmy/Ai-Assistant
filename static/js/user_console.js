@@ -121,7 +121,7 @@ function getUserData() {
             alert(`使用者資訊：
             姓名：${data.nickname}
 			登入方式:${data.Login_type}
-            註冊時間：${data.Last_login}`);
+            最後登入時間：${data.Last_login}`);
         }
     })
     .catch(error => console.error("發生錯誤", error));
@@ -188,39 +188,14 @@ function openMenu(aquarium_id) {
     menu.classList.toggle('active');  // 切換選單的顯示狀態
 }
 
-$(document).ready(function() {
-    $.ajax({
-        url: "/get_user_aquariums",
-        type: "GET",
-        success: function(response) {
-            if (response.error) {
-                alert(response.error);
-            } else {
-                response.forEach(function(aquarium) {
-                    var aquariumContainer = $('<div class="aquarium-container"></div>');
-                    var aquariumImage = $('<img src="{{ url_for("static", filename="image/aqur_image.jpg") }}" class="aquarium-image">');
-                    var aquariumName = $('<div class="aquarium-name"><span class="name-text">' + aquarium.aquarium_name + '</span><span class="options">⋮</span></div>');
-                    
-                    // 顯示水族箱詳細資訊
-                    aquariumContainer.append(aquariumImage);
-                    aquariumContainer.append(aquariumName);
-                    
-                    $('.aquariums-list').append(aquariumContainer);  // 假設有一個容器顯示水族箱
-                });
-            }
-        },
-        error: function(xhr) {
-            alert('無法獲取水族箱資料');
-        }
-    });
-});
+
 
 // 修改水族箱名稱
 function editAquariumName(aquarium_id) {
     const newName = prompt("請輸入新的水族箱名稱:");
     if (newName) {
         // 呼叫後端 API 更新水族箱名稱
-        fetch("/update_aquarium_name/${aquarium_id}", {
+        fetch(`/update_aquarium_name/${aquarium_id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -242,7 +217,7 @@ function editAquariumName(aquarium_id) {
 // 刪除水族箱
 function deleteAquarium(aquarium_id) {
     if (confirm("確定要刪除這個水族箱嗎？")) {
-        fetch("/delete_aquarium/${aquarium_id}", {
+        fetch(`/delete_aquarium/${aquarium_id}`, {
             method: 'DELETE'
         })
         .then(response => response.json())
@@ -256,3 +231,21 @@ function deleteAquarium(aquarium_id) {
         });
     }
 }
+
+document.querySelectorAll('.aquarium-link').forEach(function(link) {
+    link.addEventListener('click', function(event) {
+        event.preventDefault(); // 防止頁面重整
+
+        const aquariumId = link.getAttribute('data-aquarium-id');  // 獲取水族箱的 UUID
+        
+        // 發送 GET 請求，獲取水族箱詳細資訊
+        fetch(`/aquarium_details/${aquariumId}`)
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = `/aqur_console?aquarium-id=${aquariumId}`;
+            })
+            .catch(error => {
+                console.error('獲取水族箱詳細資訊失敗:', error);
+            });
+    });
+});
