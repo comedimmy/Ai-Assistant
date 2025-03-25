@@ -13,7 +13,7 @@
 	<button onclick="getUserData()">查詢使用者資料</button>
 	<!-- "新增水族箱" 按鈕，放在 header 下方 -->
 	<div id="add-aquarium-container">
-		<a href="/add_aqur" id="add-aquarium-btn">
+		<a href="{{ url_for('add_aqur') }}" id="add-aquarium-btn">
 			+
 		</a>
 	</div>
@@ -38,7 +38,9 @@
     <div class="aquarium-container">
         {% for aquarium in aquariums %}
         <div class="aquarium">
-            <img src="{{ url_for('static', filename='images/aqur_image.jpg') }}" alt="水族箱圖片">
+			<a href="{{ url_for('aqur_console') }}" class="aquarium-link" data-aquarium-id="{{ aquarium.aquarium_id }}">
+				<img src="{{ url_for('static', filename='images/aqur_image.jpg') }}" alt="水族箱圖片">
+			</a>
             <p>{{ aquarium.aquarium_name }}</p>
             <div class="menu">
                 <button onclick="openMenu('{{ aquarium.aquarium_id }}')">⋮</button>
