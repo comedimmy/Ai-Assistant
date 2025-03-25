@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片查詢系統</title>
+    <script>
+        function deletePhoto(photoId) {
+            if (confirm("確定要刪除此照片嗎？")) {
+                fetch("/delete_photo", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ "photo_id": photoId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();  // 刷新頁面以顯示最新的照片列表
+                    } else {
+                        alert("刪除失敗：" + data.error);
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>水族箱照片</h1>
+    {% if photos %}
+        {% for photo in photos %}
+            <div>
+                <img src="{{ photo['URL'] }}" alt="Aquarium Photo" style="max-width: 300px;">
+                <p>拍攝時間: {{ photo['LogTime'] }}</p>
+                <button onclick="deletePhoto({{ photo['PhotoID'] }})">刪除</button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>沒有找到任何照片。</p>
+    {% endif %}
+</body>
+</html>
