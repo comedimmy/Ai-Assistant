@@ -138,20 +138,6 @@ MQTT_TOPIC = "test/MQTT"
 mqtt_client = mqtt.Client()
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
 
-@app.route('/send-mqtt', methods=['POST'])
-def send_mqtt():
-    try:
-        # 取得前端發送的 JSON 資料
-        data = request.json  
-        print("收到前端資料:", data)
-
-        # 將 JSON 轉成 MQTT 訊息
-        mqtt_payload = str(data)  # 轉換成字串格式
-        mqtt_client.publish(MQTT_TOPIC, mqtt_payload)
-
-        return jsonify({"message": "MQTT 訊息已發送", "sent_data": data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 # 定義接收 POST 請求的URL
@@ -199,6 +185,8 @@ def index():
     if 'profile' in session:
         # 使用者已登入，將資料傳給前端
         user_info = session['profile']
+        if 'user_id' not in session:
+            return redirect("logout")
         user_id = session['user_id']
         user_data=aqur_sql.get_user_by_id(user_id)
         return render_template('index.html', user_info=user_info,user_data=user_data)
@@ -210,66 +198,129 @@ def index():
 @app.route("/back")
 def back():
     return render_template("index.html")  # index.html
+# 使用者介面
+@app.route('/user_console')
+def user_console():
+    google = oauth.create_client('google')  
+    if "user_name" not in session:
+        return render_template("error.html", message="您尚未登入，請先登入。")
+    
+    if 'token' in session:
+        google.token = session['token']
+        resp = google.get('userinfo')  # 用 Token 獲取使用者資訊
+        user_info = resp.json()
+        user_id = user_info['id']
+        aquariums = aqur_sql.get_aquariums_by_user(user_id)  # 🔹 呼叫函式查詢水族箱資料
+        return render_template("user_console.html",user_picture = user_info['picture'],name=user_info['name'], email=user_info['email'],aquariums=aquariums)
 
 # 新增水族箱 
 @app.route('/add_aqur')
 def add_aqur():
+    if "user_name" not in session:
+        return render_template("error.html", message="您尚未登入，請先登入。")
     return render_template('add_aqur.html')  #add_aqur.html
+
+# 指定水族箱介面
+@app.route('/aqur_console')
+def aqur_console():
+    if "user_name" not in session:
+        return render_template("error.html", message="您尚未登入，請先登入。")
+    return render_template('aqur_console.html')  #aqur_console.html
+
+#照片管理頁面
+@app.route('/picture_console')
+def picture_console():
+    if "user_name" not in session:
+        return render_template("error.html", message="您尚未登入，請先登入。")
+    aquarium_id = request.args.get('aquarium_id', 1)  # 預設顯示 aquarium_id=1
+    photos = aqur_sql.get_photos_by_aquarium_id(aquarium_id)
+    return render_template('picture_console.html', photos=photos)
+
+@app.route('/test')
+def test():
+    return render_template('test.html')  #test.html
 
 @app.route('/Google-Login')
 def google_login():
+    if "user_name" in session:
+        return render_template("error.html", message="您已經登入,請勿重複登入")
+    
     google = oauth.create_client('google')  # create the google oauth client
     redirect_uri = url_for('authorize', _external=True)
     return google.authorize_redirect(redirect_uri)
 
-
 @app.route('/authorize')
 def authorize():
     google = oauth.create_client('google')
+
     token = google.authorize_access_token()
+    if not token:
+        return render_template("error.html", message="授權失敗，請重新登入")
     session['token'] = token
-    user_info = google.get('userinfo').json()
+
+    response = google.get('userinfo')
+    user_info = response.json()
     session['profile'] = user_info
     session.permanent = True  
 
-    user_id = user_info['id']  # Google 的 userID
+    user_id = user_info['id']
     user_email = user_info['email']
-    user_name = user_info['name']  # 這是 Google 預設的名稱，但可能已修改過
-    # 檢查資料庫是否已有這個 userID
-    existing_user = aqur_sql.get_user_by_id(user_id)
+    user_name = user_info['name']
 
-    if existing_user:
-        # 已有帳戶，使用資料庫中的名稱
-        session['user_id'] = existing_user['user_id']
-        session['user_email'] = user_info['email']
-        session['user_name'] = existing_user['nickname']  # 使用者修改過的名稱
-        response = requests.post( 
-            "http://127.0.0.1:5000/api/save_user", 
-            json={"user_id": existing_user['user_id'], "nickname": existing_user['nickname'], "login_type": "Google"}
-        )# 為了更新使用者的最後登入時間
-    else:
-        # 新使用者，存入資料庫
-        response = requests.post(
-            "http://127.0.0.1:5000/api/save_user", 
-            json={"user_id": user_id, "nickname": user_name, "login_type": "Google"}
-        )
-        
-        if response.status_code == 200:
-            session['user_id'] = user_id
-            session['user_email'] = user_email
-            session['user_name'] = user_name  # 這裡存入 Google 預設名稱
+    try:
+        existing_user = aqur_sql.get_user_by_id(user_id)
+    except Exception as e:
+        return render_template("error.html", message=f"資料庫存取錯誤: {e}，請稍後再試")
+
+    try:
+        if existing_user:
+            session['user_id'] = existing_user['user_id']
+            session['user_email'] = user_info['email']
+            session['user_name'] = existing_user['nickname']
+
+            response = requests.post(
+                "http://127.0.0.1:5000/api/save_user",
+                json={
+                    "user_id": existing_user['user_id'], 
+                    "nickname": existing_user['nickname'], 
+                    "login_type": "Google"
+                },
+                timeout=5
+            )
         else:
-            return redirect(url_for('index')) 
+            response = requests.post(
+                "http://127.0.0.1:5000/api/save_user",
+                json={
+                    "user_id": user_id, 
+                    "nickname": user_name, 
+                    "login_type": "Google"
+                    },
+                timeout=5
+            )
+
+            if response.status_code == 200:
+                session['user_id'] = user_id
+                session['user_email'] = user_email
+                session['user_name'] = user_name
+            else:
+                return render_template("error.html", message="無法儲存使用者資料，請稍後再試")
+    except requests.RequestException as e:
+        return render_template("error.html", message=f"API 請求錯誤: {e}")
 
     return redirect("user_console")
 
+@app.route('/logout')
+def logout():
+    for key in list(session.keys()):
+        session.pop(key)
+    return redirect('/')
+
 # 查詢使用者資料 API
-@app.route('/get_user_data', methods=['GET'])
+@app.route('/api/get_user_data', methods=['GET'])
 def get_user_data():
     # **直接從 session 取得 user_id**
     user_id = session.get("user_id")
-    user_name = session.get("user_name")
-    if not user_name:
+    if not user_id:
         return jsonify({"error": "未登入，請重新登入"}), 401  # 未登入時返回 401 錯誤
 
     user_data = aqur_sql.get_user_by_id(user_id)
@@ -277,10 +328,10 @@ def get_user_data():
     if user_data:
         return jsonify(user_data)  # 回傳使用者資料
     else:
-        return jsonify({"error": "找不到該使用者"}), 404
+        return jsonify({"error": "找不到使用者"}), 404
     
 # 修改使用者資料API
-@app.route('/update_user_name', methods=['POST'])
+@app.route('/api/update_user_name', methods=['POST'])
 def update_user_name_api():
     if "user_name" not in session:
         return jsonify({"error": "未登入"}), 401
@@ -298,11 +349,12 @@ def update_user_name_api():
         session["user_name"] = new_user_name  # 更新 session 中的使用者名稱
         return jsonify({"message": "使用者名稱更新成功", "new_name": new_user_name})
     else:
-        return jsonify({"error": "更新失敗"}), 500
+        return jsonify({"error": "更新失敗，你沒有更改名稱"}), 500
 
+# 新增使用者資料API
 @app.route("/api/save_user", methods=["POST"])
-def save_user():
-    data = request.json  # 這裡會獲取傳遞過來的 JSON 資料
+def save_user_api():
+    data = request.json  
     if not data or "user_id" not in data or "nickname" not in data or "login_type" not in data:
         return jsonify({"message": "Invalid data", "status": "error"}), 400
 
@@ -313,25 +365,14 @@ def save_user():
     if login_type == "Google":
         user_id = aqur_sql.save_user_google(user_id, nickname, login_type)
     elif login_type == "Line":
-        user_id = aqur_sql.save_user_line(nickname, user_id, login_type)
+        user_id = aqur_sql.save_user_line(nickname, user_id, login_type) #還沒實作
     else:
         return jsonify({"message": "Invalid login type", "status": "error"}), 400
 
     return jsonify({"message": "User saved", "status": "success", "user_id": user_id})
 
-@app.route('/user_console')
-def user_console():
-    google = oauth.create_client('google')  
-    if 'token' in session:
-        google.token = session['token']
-        resp = google.get('userinfo')  # 用 Token 獲取使用者資訊
-        user_info = resp.json()
-        user_id = user_info['id']
-        aquariums = aqur_sql.get_aquariums_by_user(user_id)  # 🔹 呼叫函式查詢水族箱資料
-        return render_template("user_console.html",user_picture = user_info['picture'],name=user_info['name'], email=user_info['email'],aquariums=aquariums)
-    return redirect(url_for('index'))
 
-@app.route('/profile') #測試用
+@app.route('/api/profile') #測試用
 def profile():
     if 'profile' in session:  # 如果 session 中有 'profile' 資料，代表使用者已登入
         user_info = session['profile']
@@ -340,13 +381,8 @@ def profile():
         # 如果沒有登入，返回錯誤訊息
         return jsonify({"error": "User not logged in"}), 401
 
-@app.route('/logout')
-def logout():
-    for key in list(session.keys()):
-        session.pop(key)
-    return redirect('/')
-
-@app.route('/save_snapshot', methods=['POST'])
+# 儲存照片API
+@app.route('/api/save_snapshot', methods=['POST'])
 def save_snapshot():
     # 從請求中獲取圖片數據
     data = request.get_json()
@@ -372,7 +408,8 @@ def save_snapshot():
 
     return jsonify({'message': '圖片儲存成功', 'image_path': image_path})
 
-@app.route('/get_photos', methods=['GET'])
+# 取得照片API
+@app.route('/api/get_photos', methods=['GET'])
 def get_photos():
     aquarium_id = request.args.get('aquarium_id')  # 從 GET 請求取得 aquarium_id
     if not aquarium_id:
@@ -385,7 +422,7 @@ def get_photos():
         return jsonify({"message": "找不到照片"}), 404
 
 # 刪除照片的 API
-@app.route('/delete_photo', methods=['POST'])
+@app.route('/api/delete_photo', methods=['POST'])
 def delete_photo():
     photo_id = request.json.get("photo_id")  # 從前端接收 photo_id
 
@@ -398,13 +435,8 @@ def delete_photo():
     else:
         return jsonify({"error": "刪除照片失敗"}), 500
 
-@app.route('/picture_console')
-def picture_console():
-    aquarium_id = request.args.get('aquarium_id', 1)  # 預設顯示 aquarium_id=1
-    photos = aqur_sql.get_photos_by_aquarium_id(aquarium_id)
-    return render_template('picture_console.html', photos=photos)
-
-@app.route("/add_aquarium", methods=["GET", "POST"])
+# 新增水族箱API
+@app.route("/api/add_aquarium",methods=["POST"])
 def add_aquarium_page():
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -431,7 +463,8 @@ def add_aquarium_page():
 
     return render_template("add_aquarium.html")
 
-@app.route('/delete_aquarium/<aquarium_id>', methods=['DELETE'])
+# 刪除水族箱API
+@app.route('/api/delete_aquarium/<aquarium_id>', methods=['DELETE'])
 def delete_aquarium(aquarium_id):
     # 呼叫 SQL 函式刪除水族箱
     success = aqur_sql.delete_aquarium(aquarium_id)
@@ -440,7 +473,8 @@ def delete_aquarium(aquarium_id):
     else:
         return jsonify({"success": False, "message": "Failed to delete aquarium"}), 500
     
-@app.route('/aquarium_details/<aquarium_id>', methods=['GET'])
+# 查詢水族箱API
+@app.route('/api/aquarium_details/<aquarium_id>', methods=['GET'])
 def aquarium_details(aquarium_id):
     # 根據 aquarium_id 查詢資料庫，並返回水族箱的詳細資料
     aquarium = aqur_sql.get_aquarium_by_id(aquarium_id)
@@ -462,7 +496,8 @@ def aquarium_details(aquarium_id):
         })
     else:
         return jsonify({'error': '水族箱資料未找到'}), 404
-    
+
+# 取得用戶水族箱API !目前沒用到
 @app.route('/get_user_aquariums', methods=['GET'])
 def get_user_aquariums():
     if 'user_id' not in session:
@@ -476,7 +511,8 @@ def get_user_aquariums():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/update_aquarium_name/<aquarium_id>', methods=['POST'])
+# 更改水族箱名稱API
+@app.route('/api/update_aquarium_name/<aquarium_id>', methods=['POST'])
 def update_aquarium_name(aquarium_id):
     new_name = request.json.get('new_name')
     if not new_name:
@@ -489,8 +525,8 @@ def update_aquarium_name(aquarium_id):
     else:
         return jsonify({"success": False, "message": "Failed to update aquarium name"}), 500
 
-
-@app.route('/get_aquarium_settings', methods=['POST'])
+# 取得水族箱參數API
+@app.route('/api/get_aquarium_settings', methods=['POST'])
 def get_aquarium_settings_api():
     data = request.get_json()
     fish_species = data.get('fish_species')
@@ -502,12 +538,13 @@ def get_aquarium_settings_api():
     settings = get_aquarium_parameters(fish_species, fish_amount)
     return jsonify(settings)
 
+# 被上方函式呼叫的函式 功能是與openAI API進行溝通 取得指定資料
 def get_aquarium_parameters(fish_species, fish_amount):
     # 修改 prompt，使其要求返回簡潔的格式
-    prompt = f"根據魚種「{fish_species}」和魚隻數量「{fish_amount}」，僅返回以下水族箱的設置參數，且不需要單位(包含次/天)，格式為：\n" \
+    prompt = f"根據魚種「{fish_species}」和魚隻數量「{fish_amount}」，僅返回以下水族箱的設置參數，且不需要單位，格式為：\n" \
              "最低溫: XX\n" \
              "最高溫: XX\n" \
-             "餵食頻率: X 次/天\n" \
+             "餵食間隔時間: XX:XX:XX\n" \
              "每次餵食的數量: X 克"
 
     try:
@@ -535,8 +572,8 @@ def get_aquarium_parameters(fish_species, fish_amount):
                 parameters["min_temp"] = line.split(":")[1].strip()
             elif "最高溫" in line:
                 parameters["max_temp"] = line.split(":")[1].strip()
-            elif "餵食頻率" in line:
-                parameters["feeding_frequency"] = line.split(":")[1].strip()
+            elif "餵食間隔時間" in line:
+                parameters["feeding_frequency"] = line.split(":")[1] + ":" + line.split(":")[2]+ ":" + line.split(":")[3]
             elif "每次餵食的數量" in line:
                 # 提取餵食量並移除單位
                 feeding_amount_str = line.split(":")[1].strip()
@@ -554,9 +591,21 @@ def get_aquarium_parameters(fish_species, fish_amount):
         # 回傳錯誤訊息
         return {"error": str(e)}
 
-@app.route('/aqur_console')
-def aqur_console():
-    return render_template('aqur_console.html')  #aqur_console.html
+# mqtt相關 API(未完成)
+@app.route('/api/send-mqtt', methods=['POST'])
+def send_mqtt():
+    try:
+        # 取得前端發送的 JSON 資料
+        data = request.json  
+        print("收到前端資料:", data)
+
+        # 將 JSON 轉成 MQTT 訊息
+        mqtt_payload = str(data)  # 轉換成字串格式
+        mqtt_client.publish(MQTT_TOPIC, mqtt_payload)
+
+        return jsonify({"message": "MQTT 訊息已發送", "sent_data": data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
