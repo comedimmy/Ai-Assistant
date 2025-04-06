@@ -1,0 +1,86 @@
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+        }
+		h2 {
+			margin-bottom: 10px; /* 與輸入框保持一些距離 */
+		}
+		
+		input {
+			padding: 10px;
+			font-size: 16px;
+			text-align: center; /* 讓 placeholder 置中 */
+		}
+        .header {
+			background: url("../images/dd.jpg") no-repeat center center/cover; /* 水族箱背景，請填入 URL */
+            width: 100%;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 30px;
+            font-weight: bold;
+            position: relative;
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: fadeInDown 1s ease-out forwards;
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 1); /* 添加黑色陰影 */
+        }
+		@keyframes shimmer {
+			0% { background-position: -200px 0; }
+			100% { background-position: 200px 0; }
+		}
+		@keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .menu {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+        }
+		.dropdown span {
+			color: white; /* 讓字是白色 */
+			font-size: 20px;
+			font-weight: bold; /* 加粗 */
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); /* 添加黑色陰影 */
+		}
+
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            min-width: 120px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .dropdown-content a {
+            color: white;
+            padding: 10px;
+            display: block;
+            text-decoration: none;
+        }
+        .dropdown-content a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+		.input_title{
+			
+		
+		}
+    </style>

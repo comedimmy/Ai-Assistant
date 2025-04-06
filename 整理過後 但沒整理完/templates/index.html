@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/index.css') }}">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <title>AI管家</title>
+	<div class="header">AI管家</div>
+</head>
+<body>
+	
+    <div class="menu">
+		<div class="dropdown">
+			{% if user_info %}
+				<!-- 如果已登入，顯示使用者的名字和頭像 -->
+				<div class="dropdown">
+					<span class="user-info">
+						<span style="cursor: pointer; color:;">{{ user_info['name'] }}</span>
+					</span>
+					<div class="dropdown-content">
+						<img src="{{ user_info['picture'] }}" alt="User Avatar" class="user-avatar">
+						<p class="user-name">{{ user_info['name'] }}</p>
+						<p class="user-email">{{ user_info['email'] }}</p>
+						<a href="{{ url_for('logout') }}" class="logout-btn">登出</a>
+					</div>
+				</div>
+			{% else %}
+				<!-- 如果未登入，顯示登入/註冊 -->
+				<span style="color: white; cursor: pointer;">登入/註冊</span>
+				<div class="dropdown-content">
+					<a href="/Google-Login"><img src="{{url_for('static',filename='images/google.png')}}" width="65" height="60">Google登入</a>
+					<a href="/Line-Login"><img src="{{url_for('static',filename='images/LINE_logo.svg.png')}}" width="65" height="60">Line登入</a>					
+				</div>
+			{% endif %}
+		</div>
+        <div class="dropdown">
+            <span style="color: white; cursor: pointer;">實況畫面</span>
+            <div class="dropdown-content">
+                <a href="#">攝影機1</a>
+                <a href="#">攝影機2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <span style="color: white; cursor: pointer;">AI助理</span>
+            <div class="dropdown-content">
+                <a href="#">語音控制</a>
+                <a href="#">設備狀態</a>
+            </div>
+        </div>
+    </div>
+	<h2 >請輸入內容</h2>
+	<input type="text" id="userInput" placeholder="輸入字串">
+    <button onclick="sendData()">發送到 Flask</button>
+	
+	<div class="AI_communication">
+		<h2 id="title"></h2>
+		<input type="text" id="userInputQuation" placeholder="魚類知識問答">
+		<button onclick="sendQuation()">送出問題</button>
+	</div>
+</body>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</html>
