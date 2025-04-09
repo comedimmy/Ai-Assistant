@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增水族箱</title>
+    <link rel="stylesheet" href="/static/css/add_aqur.css"> <!-- 可選擇性地添加 CSS -->	
+
+</head>
+<body>
+	<form id="aquarium-form" method="POST" class="form-container">
+		<h2 class="form-title">新增水族箱</h2>
+		<label for="aquarium_name">水族箱名稱:</label>
+		<input type="text" id="aquarium_name" name="aquarium_name" placeholder="請輸入水族箱名稱" required><br><br>
+	
+		<label for="fish_species">魚種:</label>
+		<input type="text" id="fish_species" name="fish_species" placeholder="請輸入魚種" required><br><br>
+	
+		<label for="fish_amount">魚隻數量:</label>
+		<input type="number" id="fish_amount" name="fish_amount" placeholder="請輸入魚隻數量" required min="1"><br><br>
+	
+		<label for="AI_model">選擇 AI 模型:</label>
+		<select id="AI_model" name="AI_model">
+			<option value="ChatGPT">ChatGPT</option>
+			<option value="Gemini">Gemini</option>
+			<option value="Deepseek">Deepseek</option>
+		</select><br><br>
+	
+		<div class="form-buttons">
+			<a href="{{ url_for('web.user_console') }}">
+				<button type="button" class="back-btn">返回</button>
+			</a>
+			<button type="submit" class="submit-btn">確定</button>
+		</div>
+
+	</form>	
+	<!-- 遮罩背景 -->
+	<div id="modalOverlay" class="modal-overlay"></div>
+	
+	<form id="AI-check-form" method="POST" >
+		<div id="result"  class="modal" style="display: none;">
+			<h1 class="form-title">AI判斷結果</h1>
+			<label for="min_temp">最適合的最低溫度 (°C):</label>
+			<input type="number" id="min_temp" required min="10" required min="35" maxlength="2"><br><br>
+		
+			<label for="max_temp">最適合的最高溫度 (°C):</label>
+			<input type="number" id="max_temp" required min="20" required min="50"	maxlength="2"><br><br>
+		
+			<label for="feeding_frequency">餵食間隔:</label>
+			<input type="text" id="feeding_frequency" readonly><br><br>
+		
+			<label for="feeding_amount">餵食數量 (克):</label>
+			<input type="text" id="feeding_amount" readonly><br><br>	
+			<div class="form-buttons">			
+				<button type="button" class="back-btn" onclick="closeResult()">返回</button>
+				<button type="submit" class="submit-btn">確定</button>
+			</div>
+		</div>
+	</form>
+</body>
+<script src="{{ url_for('static', filename='js/add_aqur.js') }}"></script>
+</html>

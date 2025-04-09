@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/index.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/user_console.css') }}">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>AI管家</title>
+	<div class="header">AI管家</div>
+	<a <img src="{{url_for('static',filename='images/logo.png')}}"> </a>
+</head>
+<body>
+	<a href="{{ url_for('web.index') }}">
+        <img id="logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+    </a>
+	
+	<nav class ="navbar">
+		<div class="dropdown d-inline-block">
+			<!-- 使用者資訊選單 -->
+			    {% if user_info %}
+				
+					<!-- 進入使用者介面按鈕 -->
+					<a class="btn-custom" href="/user_console"  >進入使用者介面</a>
+				{% endif %}
+			<button class="btn-custom" type="button" data-bs-toggle="dropdown">
+				{% if user_info %}
+					{{ user_data['nickname'] }} <!-- 如果有登入，顯示名稱 -->
+				{% else %}
+					登入
+				{% endif %}
+			</button>
+			<ul class="dropdown-menu dropdown-menu-end">
+				{% if user_info %}
+					<li><a class="dropdown-item" href="javascript:void(0)">個人資料</a></li>
+					<li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">登出</a></li>
+				{% else %}
+					<li><a class="dropdown-item"href="/Google-Login"><img src="{{url_for('static',filename='images/google.png')}}" width="25" height="25"> Google登入</a></li>
+					<li><a class="dropdown-item"href="/Line-Login"><img src="{{url_for('static',filename='images/LINE_logo.svg.png')}}" width="25" height="25"> Line登入</a></li>
+				{% endif %}
+			</ul>
+		</div>
+	
+		<!-- 偏好設定選單 -->
+		<div class="dropdown d-inline-block ms-2">
+			<button class="btn-custom" type="button" data-bs-toggle="dropdown">
+				設定
+			</button>
+			<ul class="dropdown-menu dropdown-menu-end">
+				<li><a class="dropdown-item" href="#">偏好設定</a></li>
+				<li>
+					<!-- 新增淺色模式與深色模式的選項，縮排顯示 -->
+					<ul class="submenu">
+						<li><a class="dropdown-item" href="javascript:void(0)" onclick="changeToLightMode()">淺色模式</a></li>
+						<li><a class="dropdown-item" href="javascript:void(0)" onclick="changeToDarkMode()">深色模式</a></li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+	</nav>
+	<!-- 聊天視窗 -->
+    <div id="chat-box">
+        <div id="chat-box-header" onclick="toggleChatBox()">AI管家</div>
+        <div id="chat-box-body"></div>
+        <div id="chat-box-footer">
+            <input type="text" id="chat-input" placeholder="輸入訊息..." onkeydown="handleKeyPress(event)">
+            <button id="send-button" onclick="sendChatMessage()">送出</button>
+        </div>
+    </div>
+	{% if user_info %}
+    <!-- 只有登入後才會顯示聊天按鈕 -->
+    <button id="chat-button" onclick="toggleChatBox()">與AI管家聊天</button>
+	{% endif %}
+</body>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user_console.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</html>

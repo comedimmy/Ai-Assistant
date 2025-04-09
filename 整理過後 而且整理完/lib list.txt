@@ -1,0 +1,1 @@
+pip install flask flask-cors authlib python-dotenv paho-mqtt torch transformers openai requests mysql-connector-python

@@ -1,0 +1,70 @@
+    <h1>實時影像</h1>
+	<div id="capture-area">
+	<img id="video" src="{{ video_url }}" alt="Video Stream" />
+	
+	<button id="capture">拍照</button>
+	<canvas id="canvas" style="display:none;"></canvas>
+
+	
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水族箱管理頁面</title>
+</head>
+<body>
+    <h1>實時影像</h1>	
+	<button id="fetchDetailsBtn">取得水族箱資訊</button>
+	<div id="result"></div> <!-- 顯示結果用 -->
+	<input type="text" id="new_name" placeholder="輸入新名稱">
+	<button id="update_button">更新名稱</button>
+	
+    <form id="update-settings-form">
+		<div>
+			<label for="fish_species">魚種</label>
+			<input type="text" id="fish_species" name="fish_species" value="金魚" required>
+		</div>
+		
+		<div>
+			<label for="fish_amount">魚隻數量</label>
+			<input type="number" id="fish_amount" name="fish_amount" value="2" min="1" required>
+		</div>
+		
+		<div>
+			<label for="feed_amount">餵食量（克）</label>
+			<input type="number" id="feed_amount" name="feed_amount" value="4" min="1" required>
+		</div>
+	
+		<div>
+			<label for="lowest_temperature">最低溫度</label>
+			<input type="number" id="lowest_temperature" name="lowest_temperature" value="18" step="0.1" required>
+		</div>
+	
+		<div>
+			<label for="highest_temperature">最高溫度</label>
+			<input type="number" id="highest_temperature" name="highest_temperature" value="23" step="0.1" required>
+		</div>
+	
+		<div>
+			<label for="light_status">燈光狀態</label>
+			<select id="light_status" name="light_status">
+				<option value="1" selected>開</option>
+				<option value="0">關</option>
+			</select>
+		</div>
+	
+		<div>
+			<label for="water_level">水位</label>
+			<input type="number" id="water_level" name="water_level" value="null" step="1">
+		</div>
+	
+		<div>
+			<button type="button" id="update_settings_button">更新水族箱參數</button>
+		</div>
+	</form>
+</body>
+<script src="{{ url_for('static', filename='js/aqur_console.js') }}"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</html>
+

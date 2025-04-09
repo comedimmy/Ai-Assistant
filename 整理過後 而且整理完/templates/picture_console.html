@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片查詢系統</title>
+</head>
+<body>
+    <h1>水族箱照片</h1>
+    {% if photos %}
+        {% for photo in photos %}
+            <div>
+                <img src="{{ photo['path'] }}" alt="Aquarium Photo" style="max-width: 300px;">
+                <button onclick="deletePhoto({{ photo['path'] }})">刪除</button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>沒有找到任何照片。</p>
+    {% endif %}
+</body>
+</html>
