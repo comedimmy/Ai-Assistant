@@ -111,3 +111,11 @@ document.getElementById("update_settings_button").addEventListener("click", func
     })
     .catch(error => console.error("錯誤：", error));
 });
+
+function goToChat() {
+    if (aquariumId) {
+        window.location.href = `/chat_website?aquarium_id=${aquariumId}`;
+    } else {
+        alert("缺少 aquarium_id！");
+    }
+}
