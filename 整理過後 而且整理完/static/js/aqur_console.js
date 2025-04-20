@@ -112,10 +112,12 @@ document.getElementById("update_settings_button").addEventListener("click", func
     .catch(error => console.error("錯誤：", error));
 });
 
-function goToChat() {
+
+function goToPageMessage() {
+    const aquariumId = new URLSearchParams(window.location.search).get("aquarium_id");
     if (aquariumId) {
-        window.location.href = `/chat_website?aquarium_id=${aquariumId}`;
+        window.location.href = `/message?aquarium_id=${aquariumId}`;
     } else {
-        alert("缺少 aquarium_id！");
+        alert("找不到 aquarium_id！");
     }
 }

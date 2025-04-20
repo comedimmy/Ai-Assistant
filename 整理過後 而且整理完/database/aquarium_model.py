@@ -51,7 +51,6 @@ def delete_photo(aquarium_id, photo_path):
         cursor.close()
         conn.close()
 
-
 def get_fish_by_name(name):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
@@ -103,33 +102,38 @@ def update_aquarium_name(aquarium_id, new_name):
         cursor.close()
         conn.close()
 
-def add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model,min_temp,max_temp,feeding_frequency,feeding_amount):
+def add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model, min_temp, max_temp, feeding_frequency, feeding_amount):
     conn = get_connection()
-    cursor = conn.cursor()        
-    feed_time = feeding_frequency     
+    cursor = conn.cursor()
+    feed_time = feeding_frequency
+
     try:
-        # 產生唯一的水族箱 ID
+        # 產生唯一的水族箱 ID（使用 MySQL 的 UUID()）
         cursor.execute("SELECT UUID()")
         aquarium_id = cursor.fetchone()[0]
-        # 時間 = 次數
 
         # 插入到 Aquarium 表
         cursor.execute("""
-            INSERT INTO Aquarium (aquarium_id, fish_species, fish_amount, AI_model,lowest_temperature,highest_temperature,feed_time,feed_amount, Last_update)
-            VALUES (%s, %s, %s, %s,%s, %s, %s, %s, NOW())
-        """, (aquarium_id, fish_species, fish_amount, ai_model,min_temp,max_temp, feed_time,feeding_amount))
-        
+            INSERT INTO Aquarium (aquarium_id, fish_species, fish_amount, AI_model,
+                                  lowest_temperature, highest_temperature, feed_time, feed_amount, Last_update)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """, (
+            aquarium_id, fish_species, fish_amount, ai_model,
+            min_temp, max_temp, feed_time, feeding_amount
+        ))
+
         # 插入到 aquriumName 表
         cursor.execute("""
             INSERT INTO aquriumName (user_id, aquarium_id, aquarium_name)
             VALUES (%s, %s, %s)
         """, (user_id, aquarium_id, aquarium_name))
-        
+
         conn.commit()
-        return True
+        return aquarium_id  # ✅ 改這裡！原本是 return True
     except Exception as e:
         print("Database error:", str(e))
-        return False
+        conn.rollback()
+        return None  # ✅ 改這裡！失敗時回傳 None
     finally:
         cursor.close()
         conn.close()
@@ -187,6 +191,23 @@ def update_aquarium_fields(aquarium_id, fields):
         return cursor.rowcount > 0
     except Exception as e:
         print(f"[更新失敗] {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+def update_last_feed_time(aquarium_id, new_time):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE Aquarium SET Last_update = %s WHERE aquarium_id = %s",
+            (new_time.strftime('%Y-%m-%d %H:%M:%S'), aquarium_id)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print("更新 Last_update 時錯誤：", str(e))
         return False
     finally:
         cursor.close()

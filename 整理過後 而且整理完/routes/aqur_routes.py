@@ -4,7 +4,10 @@ from dotenv import load_dotenv
 import openai
 import os
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
+from services.mqtt_service import publish_command
+import database.task_model
+
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -159,14 +162,28 @@ def add_aquarium_page():
         feeding_frequency = data.get("feeding_frequency")
         feeding_amount = data.get("feeding_amount")
 
-        success = database.aquarium_model.add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model,min_temp,max_temp,feeding_frequency,feeding_amount)
+        aquarium_id  = database.aquarium_model.add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model,min_temp,max_temp,feeding_frequency,feeding_amount)
         
-        if success:
-            return jsonify({"status": "success", "message": "水族箱資料已成功新增！"}), 200
-        else:
-            return jsonify({"status": "error", "message": "資料庫錯誤，請稍後再試！"}), 500
+        if not aquarium_id:
+            return jsonify({"status": "error", "message": "新增水族箱失敗"}), 500
 
-    return render_template("add_aquarium.html")
+    # 計算 next_exe_time
+    h, m, s = map(int, feeding_frequency.split(":"))
+    interval_delta = timedelta(hours=h, minutes=m, seconds=s)
+    last_update = datetime.now()
+    next_exe_time = last_update + interval_delta
+
+    # 新增餵食任務至 tasks 表
+    database.task_model.insert_feeding_task(
+        aquarium_id=aquarium_id,
+        topic=f"aquarium/{aquarium_id}/feed",
+        payload="1",
+        name=f"{aquarium_name} 餵食",
+        next_time=next_exe_time,
+        interval_str=feeding_frequency
+    )
+
+    return jsonify({"status": "success", "message": "水族箱已新增並排程餵食！"}), 200
 
 # 查詢水族箱API
 @aqur_bp.route('/api/get_aquarium_details/<aquarium_id>', methods=['GET'])
@@ -248,3 +265,94 @@ def update_aquarium_name(aquarium_id):
         return jsonify({"success": True})
     else:
         return jsonify({"success": False, "message": "Failed to update aquarium name"}), 500
+    
+# 查詢餵食資料    
+@aqur_bp.route('/api/get_next_feed_time_and_amount', methods=['GET'])
+def get_next_feed_time():
+    aquarium_id = request.args.get('aquarium_id')
+    if not aquarium_id:
+        return jsonify({"error": "請提供 aquarium_id"}), 400
+
+    aquarium = database.aquarium_model.get_aquarium_by_id(aquarium_id)
+    if not aquarium:
+        return jsonify({"error": "查無此水族箱"}), 404
+
+    try:
+        feed_interval = aquarium['feed_time'] 
+        last_update = aquarium['Last_update'] 
+        feed_amount = aquarium['feed_amount']
+        current_time = datetime.now()
+
+        # 安全處理空值
+        if not feed_interval or not last_update:
+            return jsonify({"error": "feed_time 或 Last_update 為空"}), 400
+
+        next_feed_time = last_update + feed_interval
+        time_remaining = next_feed_time - current_time
+
+        return jsonify({
+            "current_time": current_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "last_update": last_update.strftime("%Y-%m-%d %H:%M:%S"),
+            "feed_interval": str(feed_interval),
+            "next_feed_time": next_feed_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "time_remaining": str(time_remaining).split('.')[0],
+            "feed_amount": feed_amount,
+            "should_feed_now": current_time >= next_feed_time
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@aqur_bp.route('/api/update_feed_time', methods=['POST'])
+def update_feed_time():
+    data = request.get_json()
+    aquarium_id = data.get("aquarium_id")
+
+    if not aquarium_id:
+        return jsonify({"error": "請提供 aquarium_id"}), 400
+
+    success = database.aquarium_model.update_last_feed_time(aquarium_id, datetime.now())
+
+    if success:
+        return jsonify({"message": "Last_update 更新成功！"})
+    else:
+        return jsonify({"error": "更新失敗"}), 500
+
+# 使用者手動餵食API
+@aqur_bp.route('/api/manual_feed', methods=['POST'])
+def manual_feed():
+    data = request.get_json()
+    aquarium_id = data.get("aquarium_id")
+
+    if not aquarium_id:
+        return jsonify({"error": "請提供 aquarium_id"}), 400
+
+    now = datetime.now()
+
+    # 發送 MQTT 餵食訊號
+    publish_command(aquarium_id)
+
+    # 更新 Last_update
+    success = database.aquarium_model.update_last_feed_time(aquarium_id, now)
+
+    if success:
+        return jsonify({
+            "message": "餵食成功並更新時間！",
+            "updated_time": now.strftime("%Y-%m-%d %H:%M:%S")
+        })
+    else:
+        return jsonify({"error": "餵食訊號已發送，但資料庫更新失敗"}), 500
+    
+@aqur_bp.route('/api/get_user_aquariums', methods=['GET'])
+def get_user_aquariums():
+    if 'user_id' not in session:
+        return jsonify({"error": "未登入"}), 401
+
+    user_id = session['user_id']
+    try:
+        aquariums = database.aquarium_model.get_aquariums_by_user(user_id)
+        
+        result = [{"aquarium_id": a["aquarium_id"], "aquarium_name": a["aquarium_name"]} for a in aquariums]
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

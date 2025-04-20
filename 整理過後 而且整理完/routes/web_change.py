@@ -63,10 +63,6 @@ def picture_console():
 def test():
     return render_template('test.html')  #test.html
 
-@web_bp.route('/chat_website')
-def chat_website():
-    aquarium_id = request.args.get("aquarium_id")
-    if not aquarium_id:
-        return "缺少 aquarium_id", 400
-    # 可以在這裡用 aquarium_id 查資料、渲染頁面
-    return render_template("chat.html", aquarium_id=aquarium_id)
+@web_bp.route('/message')
+def message():
+    return render_template('message.html')  #messenge.html
