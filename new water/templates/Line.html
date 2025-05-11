@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>用 LINE 登入</title>
+</head>
+<body>
+    <h1>歡迎使用LINE登入系統</h1>
+    <button id="login-btn">使用LINE登入</button>
+
+    <script>
+        document.getElementById('login-btn').addEventListener('click', function () {
+            const clientId = '2007340400';
+            const redirectUri = encodeURIComponent('http://127.0.0.1:5000/api/Line-callback');
+            const state = 'abc123'; // 可亂寫，用來防止CSRF攻擊
+            const scope = 'profile openid email'; // 你要拿哪些資料
+
+            const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scope}`;
+            
+            window.location.href = loginUrl;  // 直接跳轉到LINE授權頁面
+        });
+    </script>
+</body>
+</html>

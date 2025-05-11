@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 管家</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .navigation {
+            position: absolute;
+            height: 114px;
+            left: -2px;
+            right: 2px;
+            top: 0px;
+            background: linear-gradient(90deg, #34E0ED 0%, rgba(35, 67, 210, 0.32) 51.03%, rgba(25, 32, 180, 0.85) 99.98%);
+        }
+        #logo {
+            position: absolute;
+            width: 106px;
+            height: 114px;
+            left: 13px;
+            top: 0px;
+        }
+        .items {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0px;
+            gap: 48px;
+            position: absolute;
+            width: 112px;
+            height: 107px;
+            right: 34px;
+            top: 3px;
+        }
+        .button {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            padding: 14px 24px;
+            gap: 8px;
+            width: 96px;
+            height: 64px;
+            filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.05));
+            border-radius: 8px;
+            background: #6AC549;
+        }
+        .login {
+            width: 48px;
+            height: 30px;
+            font-size: 24px;
+            font-weight: 500;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+        }
+        #image {
+            position: absolute;
+            width: 1280px;
+            height: auto;
+            left: 50%;
+            transform: translate(-32%, 0px);
+            border-radius: 8px;
+        }
+        .title {
+            position: absolute;
+            width: 229px;
+            height: 87px;
+            left: 50%;
+            top: 11px;
+            transform: translateX(-50%);
+            font-family: 'Acme';
+            font-size: 64px;
+            font-weight: 400;
+            color: #FFFFFF;
+        }
+        .description {
+            position: absolute;
+            width: 844px;
+            left: 64px;
+            top: 157px;
+        }
+        .heading {
+            font-size: 64px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #000;
+        }
+		
+        .subheading {
+            font-size: 24px;
+            font-weight: 400;
+            color: rgba(0, 0, 0, 0.75);
+			padding-bottom: 50px;
+        }        .dropdown {
+            position: relative;
+        }
+        .dropdown-menu {
+            right: 0; /* 讓下拉選單向右對齊 */
+        }
+		.btn-custom {
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0); /* 字體陰影 */
+            background-color: transparent; /* 按鈕背景顏色 */
+            border: none; /* 去掉邊框 */
+			text-decoration: none;
+            width: 60px;
+            height: 36px;
+            font-size: 24px;
+            font-weight: 500;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+			margin-top: -15px;
+        }
+
+        /* 按鈕的 hover 狀態樣式 */
+        .btn-custom:hover {
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 1); /* hover 時的字體陰影 */
+        }
+		
+		.navbar {
+			justify-content: flex-end !important;
+            top: 10px; 
+            right: 10px; 
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+		.chat-btn {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			padding: 12px 20px;
+			background-color: #34E0ED;
+			color: #FFFFFF;
+			font-size: 18px;
+			font-weight: 500;
+			border-radius: 25px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			cursor: pointer;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+			transition: background-color 0.3s ease;
+		}
+		
+		.chat-btn:hover {
+			background-color: #28a9b4;
+		}
+		
+		.arrow {
+			font-size: 20px;
+			margin-top: -4px;
+		}
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <div class="cute"></div>
+		<img id="logo" src="/static/images/logo.png" alt="Logo">
+
+        <div class="items">
+            <nav class ="navbar">
+				<div class="dropdown d-inline-block">
+					<!-- 使用者資訊選單 -->
+
+
+
+					<button class="btn-custom" type="button" data-bs-toggle="dropdown">
+
+							登入
+
+					</button>
+					<ul class="dropdown-menu dropdown-menu-end">
+
+
+							<!-- <li><a class="dropdown-item"href="/Google-Login"><img src="images/google.png" width="25" height="25"> Google登入</a></li> -->
+							<li><a class="dropdown-item" id="loginBtn"><img src="/static/images/LINE_logo.svg.png" width="25" height="25"> Line登入</a></li>
+
+					</ul>
+				</div>
+			</nav>
+        </div>
+        <div class="title">AI 管家</div>
+    </div>
+    <div class="hero-image"></div>
+    <div class="description">
+        <div class="heading">介紹</div>
+        <div class="subheading">水族箱</div>
+		<img id="image" src="/static/images/image.png" alt="image">
+    </div>
+	<div class="chat-btn">
+		與AI管家聊天 <span class="arrow">↑</span>
+	</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+	document.addEventListener("DOMContentLoaded", function () {
+		// Extract JWT token from URL
+		const urlParams = new URLSearchParams(window.location.search);
+		const token = urlParams.get('token');
+
+		if (token) {
+			localStorage.setItem('jwt', token); // Store JWT in localStorage
+			console.log("JWT Token Stored:", token);
+			window.history.replaceState({}, document.title, "/"); // Clean URL
+		}
+
+		checkLoginStatus();
+	});
+
+	function checkLoginStatus() {
+		const token = localStorage.getItem('jwt');
+		const navbar = document.querySelector('.navbar');
+
+		if (token) {
+			try {
+				const payload = JSON.parse(atob(token.split('.')[1])); // Decode JWT payload
+
+				navbar.innerHTML = `
+					<div class="user-info">
+						<img src="${payload.picture_url}" alt="Profile Picture" width="40" height="40">
+						<span>${payload.display_name}</span>
+						<a href="/dashboard" class="dashboard-link">Dashboard</a>
+						<button class="logout-btn" onclick="logout()">登出</button>
+					</div>
+				`;
+			} catch (error) {
+				console.error("Invalid JWT:", error);
+			}
+		}
+	}
+
+	function logout() {
+		localStorage.removeItem('jwt'); // Remove JWT
+		location.reload();
+	}
+
+    const clientId = '2007340400';
+    const redirectUri = 'http://127.0.0.1:5000/api/Line-callback'; // Flask endpoint
+    document.getElementById('loginBtn').onclick = () => {
+      const state = Math.random().toString(36).substring(2);
+      const scope = 'profile openid email';
+      const authUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${scope}`;
+      window.location.href = authUrl;
+    };
+
+  </script>
+</html>

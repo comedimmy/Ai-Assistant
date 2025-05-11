@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 管家 Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f4f4;
+    }
+    .navigation {
+      position: absolute;
+      height: 114px;
+      left: -2px;
+      right: 2px;
+      top: 0px;
+      background: linear-gradient(90deg, #34E0ED 0%, rgba(35, 67, 210, 0.32) 51.03%, rgba(25, 32, 180, 0.85) 99.98%);
+      z-index: 1000;
+    }
+    #logo {
+      position: absolute;
+      width: 106px;
+      height: 114px;
+      left: 13px;
+      top: 0px;
+    }
+    .items {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 48px;
+      position: absolute;
+      width: 112px;
+      height: 107px;
+      right: 34px;
+      top: 3px;
+    }
+    .btn-custom {
+      background-color: transparent;
+      border: none;
+      width: 60px;
+      height: 36px;
+      font-size: 24px;
+      font-weight: 500;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      margin-top: -15px;
+    }
+    .btn-custom:hover {
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 1);
+    }
+    .title {
+      position: absolute;
+      width: 229px;
+      height: 87px;
+      left: 50%;
+      top: 11px;
+      transform: translateX(-50%);
+      font-family: 'Acme', sans-serif;
+      font-size: 64px;
+      font-weight: 400;
+      color: #FFFFFF;
+    }
+    .navbar {
+      justify-content: flex-end !important;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 20px;
+    }
+
+    .container {
+      margin-top: 140px;
+    }
+    .aquarium-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .aquarium-thumbnail {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      background-color: #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+      text-align: center;
+    }
+    .aquarium-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .thumbnail-overlay {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 5px;
+      border-radius: 50%;
+      cursor: pointer;
+      color: white;
+    }
+    .add-new-aquarium {
+      width: 150px;
+      height: 150px;
+      background-color: #007bff;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 48px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+	.modal-header {
+      background-color: #34E0ED;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header placeholder, will be loaded by JS -->
+  <div id="header-placeholder">
+
+  </div>
+
+  <div class="container">
+    <h1>您的水族箱</h1>
+    <div class="aquarium-container">
+      
+  </div>
+
+  <!-- ✅ Modal for Adding Aquarium -->
+  <div class="modal fade" id="aquariumModal" tabindex="-1" aria-labelledby="aquariumModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="aquariumForm">
+          <div class="modal-header">
+            <h5 class="modal-title" id="aquariumModalLabel">新增水族箱</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="aquariumName" class="form-label">水族箱名稱</label>
+              <input type="text" class="form-control" id="aquariumName" required>
+            </div>
+            <div class="mb-3">
+              <label for="species" class="form-label">魚種</label>
+              <input type="text" class="form-control" id="species" required>
+            </div>
+            <div class="mb-3">
+              <label for="fishCount" class="form-label">魚的數量</label>
+              <input type="number" class="form-control" id="fishCount" required>
+            </div>
+            <div class="mb-3">
+              <label for="aiModel" class="form-label">AI 管家模型</label>
+              <select class="form-select" id="aiModel" required>
+                <option selected disabled value="">請選擇</option>
+                <option value="GPT-4">GPT-4</option>
+                <option value="GPT-3.5">GPT-3.5</option>
+                <option value="CustomBot">自訂模型</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">新增</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/header_and_auth.js"></script>
+  <script>
+  function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1]; // 取出中段 Payload
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (error) {
+        console.error("JWT 解碼失敗：", error);
+        return null;
+    }
+}
+	async function fetchAquariums() {
+		const token = localStorage.getItem('jwt');
+		if (!token) return;
+
+		const payload = parseJwt(token);
+		const userId = payload.user_id;
+
+		try {
+			const response = await fetch('/api/get_aquariums_from_user', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`  // Optional, for extra auth
+				},
+				body: JSON.stringify({ user_id: userId })
+			});
+
+			if (!response.ok) throw new Error("Failed to fetch aquariums");
+
+			const data = await response.json();
+			renderAquariums(data.aquariums);  // [{ name: "...", image_url: "..." }, ...]
+		} catch (error) {
+			console.error("Error fetching aquariums:", error);
+		}
+	}
+
+	function renderAquariums(aquariumList) {
+		const container = document.querySelector('.aquarium-container');
+		//container.innerHTML = ''; // Clear existing content
+
+		aquariumList.forEach((aq, index) => {
+			const div = document.createElement('div');
+			div.className = 'aquarium-thumbnail';
+			div.innerHTML = `
+			${aq.aquarium_name}
+				<img src="${aq.image_url}" alt="${aq.aquarium_id}" >
+				<div class="thumbnail-overlay" onclick="deleteAquarium('${aq.aquarium_id}')">🗑️</div>
+			`;
+			container.appendChild(div);
+		});
+
+		// Re-add "+" button
+		const addBtn = document.createElement('div');
+		addBtn.className = 'add-new-aquarium';
+		addBtn.setAttribute('data-bs-toggle', 'modal');
+		addBtn.setAttribute('data-bs-target', '#aquariumModal');
+		addBtn.innerText = '+';
+		container.appendChild(addBtn);
+	}
+	document.addEventListener("DOMContentLoaded", () => {
+		fetchAquariums();  // Load aquarium list on page load
+	});
+	
+	function deleteAquarium(aquariumId) {
+	const token = localStorage.getItem('jwt');
+	if (!confirm("你確定要刪除這個水族箱嗎？")) return;
+
+	fetch(`/api/unbind_aquarium/${aquariumId}`, {
+		method: "DELETE",
+		headers: {
+			"Authorization": `Bearer ${token}`
+		}
+	})
+	.then(res => res.json())
+	.then(result => {
+		if (result.status === "success") {
+			alert("刪除成功！");
+			location.reload(); // 或重新渲染畫面
+		} else {
+			alert("刪除失敗：" + result.message);
+		}
+	})
+	.catch(err => {
+		console.error("刪除錯誤：", err);
+		alert("發生錯誤，請稍後再試");
+	});
+}
+  </script>
+</body>
+</html>

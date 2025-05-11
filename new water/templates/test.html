@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>API 測試工具</title>
+</head>
+<body>
+    <h1>API 測試網頁</h1>
+
+    <label for="api">選擇要測試的 API:</label><br>
+    <select id="api">
+        <option value="/api/get_user_data">查詢使用者資料 (GET)</option>
+        <option value="/api/get_aquariums">取得假資料水族箱 (POST)</option>
+        <option value="/api/get_aquariums_from_user">用Token查水族箱 (POST)</option>
+        <option value="/api/save_user">新增使用者 (POST)</option>
+        <option value="/api/test_database">測試資料庫 (GET)</option>
+    </select>
+
+    <br><br>
+
+    <label for="method">選擇請求方法:</label><br>
+    <select id="method">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+    </select>
+
+    <br><br>
+
+    <label for="token">輸入 JWT Token (Authorization):</label><br>
+    <input type="text" id="token" placeholder="Bearer後面的那串..."><br><br>
+
+    <label for="inputData">POST時的Request Body (JSON格式):</label><br>
+    <textarea id="inputData" rows="10" cols="50" placeholder='{"user_id":"abc123"}'></textarea><br><br>
+
+    <button onclick="sendRequest()">送出請求</button>
+
+    <h2>伺服器回應結果：</h2>
+    <pre id="response"></pre>
+
+    <script>
+        async function sendRequest() {
+            const api = document.getElementById('api').value;
+            const method = document.getElementById('method').value;
+            const token = document.getElementById('token').value.trim();
+            const inputData = document.getElementById('inputData').value;
+            
+            let url = api;
+            let options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            if (method === 'POST' && inputData) {
+                try {
+                    options.body = JSON.stringify(JSON.parse(inputData));
+                } catch (e) {
+                    alert('JSON格式錯誤！請檢查你的Request Body。');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                document.getElementById('response').textContent = JSON.stringify(data, null, 4);
+            } catch (error) {
+                document.getElementById('response').textContent = `錯誤: ${error}`;
+            }
+        }
+    </script>
+</body>
+</html>
