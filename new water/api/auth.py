@@ -15,7 +15,7 @@ def line_info():
     CLIENT_ID = '2007340400'
     CLIENT_SECRET = 'eb8592a6d896f62008467143d4f6aa65'
     REDIRECT_URI = 'http://127.0.0.1:5000'
-    SECRET_KEY = 'very-fucking-secret-key'  # Secret key for signing JWT
+    SECRET_KEY = 'very-secret-key'  # Secret key for signing JWT
     
     data = request.json
     
@@ -70,7 +70,7 @@ def callback():
 
     REDIRECT_URI = 'http://127.0.0.1:5000/api/Line-callback'
 
-    SECRET_KEY = 'very-fucking-secret-key'  # Secret key for signing JWT
+    SECRET_KEY = 'very-secret-key'  # Secret key for signing JWT
     
     code = request.args.get('code')
 

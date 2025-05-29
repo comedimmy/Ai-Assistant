@@ -27,7 +27,7 @@ app.register_blueprint(dialogue_bp)
 app.config.from_object(Config)
 '''
 app.register_blueprint(web_bp)
-app.register_blueprint(api)
+app.register_blueprint(api, url_prefix='/api')
 
 
 oauth = OAuth(app)
@@ -37,3 +37,4 @@ app.secret_key = 'very-fucking-secret-key'
 
 if __name__ == '__main__':
     app.run(debug=True)
+

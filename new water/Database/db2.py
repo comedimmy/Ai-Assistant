@@ -3,7 +3,7 @@ import os
 import mysql.connector
 from mysql.connector import pooling, Error
 from typing import Optional
-
+from datetime import datetime
 # -----------------------------------------------------------------------------
 # 1) Configuration via environment variables (with sensible defaults)
 # -----------------------------------------------------------------------------
@@ -61,7 +61,24 @@ def get_aquariums_by_user(user_id: str) -> list[dict]:
         if conn:
             conn.close()
 
-
+def get_aquarium_by_id(aquarium_id: str) -> dict | None:
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True) 
+        cursor.execute("""
+            SELECT * FROM Aquarium where aquarium_id=%s
+        """, (aquarium_id,))
+        
+        aquariums = cursor.fetchone()
+        return aquariums
+    except Exception as e:
+        print("Database error:", str(e))
+        return []
+    finally:
+        cursor.close()
+        conn.close()
 
 def get_user_by_id(user_id: str) -> list[dict]:
     """根據使用者id查詢使用者資料，回傳 dict 或 None。"""
@@ -82,6 +99,50 @@ def get_user_by_id(user_id: str) -> list[dict]:
         if conn:
             conn.close()
 
+
+def update_user_profile(user_id, new_name=None, new_skin=None):
+    """更新使用者名稱與 AI 機器人皮膚"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        updates = []
+        params = []
+
+        if new_name:
+            updates.append("nickname = %s")
+            params.append(new_name)
+        if new_skin is not None:
+            updates.append("ai_bot_skin = %s")
+            params.append(new_skin)
+
+        if not updates:
+            return False
+
+        params.append(user_id)
+
+        query = f"""
+            UPDATE users
+            SET {', '.join(updates)}
+            WHERE user_id = %s
+        """
+
+        cursor.execute(query, tuple(params))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print("Database error:", str(e))
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+
+#------------------------------------------------------
+# 儲存使用者
+#------------------------------------------------------
 def save_user(user_id,display_name, login_type="Line"):
     """將使用者資料儲存到資料庫，若使用者已存在則更新 Last_login"""
     conn = None
@@ -119,6 +180,9 @@ def save_user(user_id,display_name, login_type="Line"):
         if conn:
             conn.close()
 
+#------------------------------------------------------
+# 更新水族箱的所有設定(模擬新增)
+#------------------------------------------------------
 def update_aquarium(
     aquarium_id: str,
     user_id: str,
@@ -137,12 +201,13 @@ def update_aquarium(
         conn = get_connection()
         cursor = conn.cursor()
 
-        # 更新 Aquarium 表
+        # 更新 Aquarium 表並設為已激活
         cursor.execute("""
             UPDATE Aquarium
             SET fish_species = %s, fish_amount = %s, AI_model = %s,
                 lowest_temperature = %s, highest_temperature = %s,
-                feed_time = %s, feed_amount = %s, Last_update = NOW()
+                feed_time = %s, feed_amount = %s, Last_update = NOW(),
+                activated = TRUE
             WHERE aquarium_id = %s
         """, (
             fish_species, fish_amount, ai_model,
@@ -167,7 +232,25 @@ def update_aquarium(
         cursor.close()
         conn.close()
 
+# 新增：檢查是否已激活
 
+def is_aquarium_activated(aquarium_id: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT activated FROM Aquarium WHERE aquarium_id = %s", (aquarium_id,))
+        row = cursor.fetchone()
+        return row and bool(row[0])
+    except Exception as e:
+        print("[Check activated Error]:", str(e))
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+#------------------------------------------------------
+# 以user_id為主與某個水族箱取消綁定
+#------------------------------------------------------
 def unbind_user_from_aquarium(user_id: str, aquarium_id: str) -> bool:
     conn = None
     cursor = None
@@ -175,7 +258,6 @@ def unbind_user_from_aquarium(user_id: str, aquarium_id: str) -> bool:
         conn = get_connection()
         cursor = conn.cursor()
 
-        # 僅刪除該使用者對此水族箱的綁定
         cursor.execute("""
             DELETE FROM aquriumName
             WHERE user_id = %s AND aquarium_id = %s
@@ -185,6 +267,171 @@ def unbind_user_from_aquarium(user_id: str, aquarium_id: str) -> bool:
         return cursor.rowcount > 0
     except Exception as e:
         print("Database error:", str(e))
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+#------------------------------------------------------
+# 新增：只做綁定，不修改設定
+#------------------------------------------------------
+def bind_user_to_aquarium(user_id: str, aquarium_id: str, aquarium_name: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO aquriumName (user_id, aquarium_id, aquarium_name)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE aquarium_name = VALUES(aquarium_name)
+        """, (user_id, aquarium_id, aquarium_name))
+        conn.commit()
+        return True
+    except Exception as e:
+        print("[Bind User Error]:", str(e))
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+#------------------------------------------------------
+# 若此aquarium_id綁定人數為0，則取消激活狀態
+#------------------------------------------------------
+def deactivate_aquarium_if_unbound(aquarium_id: str):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT COUNT(*) FROM aquriumName
+            WHERE aquarium_id = %s
+        """, (aquarium_id,))
+        result = cursor.fetchone()
+
+        if result and result[0] == 0:
+            cursor.execute("""
+                UPDATE Aquarium
+                SET activated = FALSE
+                WHERE aquarium_id = %s
+            """, (aquarium_id,))
+            conn.commit()
+    except Exception as e:
+        print("[Deactivate aquarium error]:", str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+
+#------------------------------------------------------
+# 取得聊天紀錄
+#------------------------------------------------------
+def get_dialogue_by_aquarium(aquarium_id: str, offset: int = 0, limit: int = 10) -> list[dict]:
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT question, response, transmit_time
+            FROM dialogue
+            WHERE aquarium_id = %s
+            ORDER BY transmit_time ASC
+            LIMIT %s OFFSET %s
+        """, (aquarium_id, limit, offset))
+        return cursor.fetchall()
+    except Exception as e:
+        print("[Get dialogue Error]:", str(e))
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+#------------------------------------------------------
+# 新增與AI聊天的紀錄
+#------------------------------------------------------
+def insert_dialogue(aquarium_id: str, user_id: str, question: str, response: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO dialogue (aquarium_id, user_id, question, response, transmit_time)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (aquarium_id, user_id, question, response))
+        conn.commit()
+        return True
+    except Exception as e:
+        print("[Insert dialogue Error]:", str(e))
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+#------------------------------------------------------
+# 為了讓AI理解上下文 必須存取該水族箱的部分聊天紀錄
+#------------------------------------------------------
+def get_recent_questions(aquarium_id: str, limit: int = 5) -> list[str]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT question
+            FROM dialogue
+            WHERE aquarium_id = %s
+            ORDER BY transmit_time DESC
+            LIMIT %s
+        """, (aquarium_id, limit))
+        rows = cursor.fetchall()
+        return [row[0] for row in reversed(rows)] if rows else []
+    except Exception as e:
+        print("[Get recent_questions Error]:", str(e))
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+#------------------------------------------------------
+# 更新餵食時間紀錄
+#------------------------------------------------------
+
+def update_feeding_settings(aquarium_id: str, feed_amount: int, feed_time: str) -> bool:
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE Aquarium
+            SET feed_amount = %s,
+                feed_time = %s,
+                Last_update = NOW()
+            WHERE aquarium_id = %s
+        """, (feed_amount, feed_time, aquarium_id))
+
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print("[Feeding Update Error]:", str(e))
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+# 新增事件紀錄函式
+
+def insert_event_record(user_id: str, aquarium_id: str, status: bool, category: str, action: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO event_log (user_id, aquarium_id, status, category, action, timestamp)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+        """, (user_id, aquarium_id, status, category, action))
+        conn.commit()
+        return True
+    except Exception as e:
+        print("[Insert Event Error]:", str(e))
         return False
     finally:
         cursor.close()

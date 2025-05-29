@@ -22,3 +22,6 @@ def dashboard():
 def add_aqur():
     return render_template('add_aqur.html')  #test.html
 
+@web_bp.route('/message')
+def message():
+    return render_template('message.html')  #test.html
