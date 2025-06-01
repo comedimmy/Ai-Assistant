@@ -276,9 +276,12 @@ def unbind_user_from_aquarium(user_id: str, aquarium_id: str) -> bool:
 # 新增：只做綁定，不修改設定
 #------------------------------------------------------
 def bind_user_to_aquarium(user_id: str, aquarium_id: str, aquarium_name: str) -> bool:
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
+
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO aquriumName (user_id, aquarium_id, aquarium_name)
             VALUES (%s, %s, %s)
@@ -318,6 +321,7 @@ def deactivate_aquarium_if_unbound(aquarium_id: str):
                 WHERE aquarium_id = %s
             """, (aquarium_id,))
             conn.commit()
+            return 1
     except Exception as e:
         print("[Deactivate aquarium error]:", str(e))
     finally:
@@ -329,9 +333,11 @@ def deactivate_aquarium_if_unbound(aquarium_id: str):
 # 取得聊天紀錄
 #------------------------------------------------------
 def get_dialogue_by_aquarium(aquarium_id: str, offset: int = 0, limit: int = 10) -> list[dict]:
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
     try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
         cursor.execute("""
             SELECT question, response, transmit_time
             FROM dialogue
@@ -351,9 +357,11 @@ def get_dialogue_by_aquarium(aquarium_id: str, offset: int = 0, limit: int = 10)
 # 新增與AI聊天的紀錄
 #------------------------------------------------------
 def insert_dialogue(aquarium_id: str, user_id: str, question: str, response: str) -> bool:
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO dialogue (aquarium_id, user_id, question, response, transmit_time)
             VALUES (%s, %s, %s, %s, NOW())
@@ -371,9 +379,11 @@ def insert_dialogue(aquarium_id: str, user_id: str, question: str, response: str
 # 為了讓AI理解上下文 必須存取該水族箱的部分聊天紀錄
 #------------------------------------------------------
 def get_recent_questions(aquarium_id: str, limit: int = 5) -> list[str]:
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT question
             FROM dialogue
@@ -421,9 +431,11 @@ def update_feeding_settings(aquarium_id: str, feed_amount: int, feed_time: str) 
 # 新增事件紀錄函式
 
 def insert_event_record(user_id: str, aquarium_id: str, status: bool, category: str, action: str) -> bool:
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO event_log (user_id, aquarium_id, status, category, action, timestamp)
             VALUES (%s, %s, %s, %s, %s, NOW())
@@ -433,6 +445,25 @@ def insert_event_record(user_id: str, aquarium_id: str, status: bool, category: 
     except Exception as e:
         print("[Insert Event Error]:", str(e))
         return False
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def get_activated_aquariums():
+    conn = None
+    cursor = None
+    try:    
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT aquarium_id, highest_temperature, lowest_temperature, 
+                   feed_amount, feed_time, activated
+            FROM aquariums
+            WHERE activated = 1
+        """)
+        return cursor.fetchall()
     finally:
         cursor.close()
         conn.close()

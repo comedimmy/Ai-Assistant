@@ -3,12 +3,13 @@ import jwt
 import Database.db2 
 from openai import OpenAI
 from datetime import datetime, timedelta
+import MQTT.MQTT
 
 api = Blueprint('api', __name__)
 
 SECRET_KEY = 'very-secret-key'  # Secret key for signing JWT
 
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="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")
 
 # 查詢使用者資料 API
 @api.route('/get_user_data', methods=['GET'])
@@ -242,9 +243,12 @@ def activate_aquarium(aquarium_id):
 
         # 如果已激活，只允許綁定使用者，不允許修改參數
         if Database.db2.is_aquarium_activated(aquarium_id):
+            data = request.get_json()
+            aquarium_name = data.get("aquarium_name")
             Database.db2.bind_user_to_aquarium(user_id, aquarium_id, aquarium_name)
             return jsonify({"status": "joined", "message": "此水族箱已被激活，已加入為共同管理者"}), 200
-        
+
+        # 取得設定資訊
         data = request.get_json()
         aquarium_name = data.get("aquarium_name")
         fish_species = data.get("fish_species")
@@ -263,13 +267,18 @@ def activate_aquarium(aquarium_id):
         if not success:
             return jsonify({"status": "error", "message": "激活失敗或資料無效"}), 500
 
-        return jsonify({"status": "success", "message": "水族箱已成功激活"}), 200
+        # 取得該水族箱的完整資料以便傳送給硬體
+        aquarium = Database.db2.get_aquarium_by_id(aquarium_id)
+        if aquarium:
+            MQTT.MQTT.publish_aquarium_settings(aquarium)
+
+        return jsonify({"status": "success", "message": "水族箱已成功激活並已通知硬體"}), 200
 
     except jwt.ExpiredSignatureError:
         return jsonify({'error': 'Token 已過期'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Token 驗證失敗'}), 401
-
+    
     
 # 解除綁定 API
 @api.route('/unbind_aquarium/<aquarium_id>', methods=['DELETE'])
@@ -289,7 +298,12 @@ def unbind_aquarium(aquarium_id):
 
         if success:
             # 若此 aquarium 綁定人數為 0，則取消激活狀態
-            Database.db2.deactivate_aquarium_if_unbound(aquarium_id)
+            deactivated = Database.db2.deactivate_aquarium_if_unbound(aquarium_id)
+            
+            # 若成功取消激活，通知硬體
+            if deactivated:
+                MQTT.MQTT.publish_aquarium_deactivated(aquarium_id)
+
             return jsonify({'status': 'success', 'message': '已解除綁定'}), 200
         else:
             return jsonify({'status': 'error', 'message': '找不到綁定關係'}), 404
@@ -502,6 +516,22 @@ def update_feeding_schedule():
         return jsonify({'error': 'Token 已過期'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Token 驗證失敗'}), 401
+
+
+@api.route('/aquarium/lights', methods=['POST'])
+def control_light():
+    data = request.get_json()
+    state = data.get("state")
+
+    if state not in ["on", "off"]:
+        return jsonify({"error": "參數錯誤，需提供 'state': 'on' 或 'off'"}), 400
+
+    try:
+        MQTT.MQTT.publish_light_command(state)
+        return jsonify({"message": f"已發送燈光控制指令：{state}"}), 200
+    except Exception as e:
+        return jsonify({"error": f"MQTT 發送失敗: {str(e)}"}), 500
+
 
 
 @api.route('/test_database',methods=['GET'])

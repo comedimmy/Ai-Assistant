@@ -14,7 +14,6 @@ from authlib.integrations.flask_client import OAuth
 from api.web_change import web_bp
 from api.api import api
 
-
 app = Flask(__name__)
 CORS(app)  # 允許跨來源請求
 load_dotenv()  # 載入 .env 環境變數
@@ -33,7 +32,7 @@ app.register_blueprint(api, url_prefix='/api')
 oauth = OAuth(app)
 
 app.register_blueprint(Line)
-app.secret_key = 'very-fucking-secret-key'
+app.secret_key = 'very-secret-key'
 
 if __name__ == '__main__':
     app.run(debug=True)

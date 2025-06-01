@@ -1,90 +1,19 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <title>餵食時間查詢測試</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 30px;
-      background-color: #f5f5f5;
-    }
+<label class="switch">
+  <input type="checkbox" id="lightSwitch">
+  <span class="slider"></span>
+</label>
 
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin-right: 10px;
-    }
+<script>
+document.getElementById('lightSwitch').addEventListener('change', function () {
+    const state = this.checked ? "on" : "off";
 
-    #feed-info {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    p {
-      margin: 6px 0;
-    }
-  </style>
-</head>
-<body>
-
-  <h2>餵食時間查詢測試</h2>
-
-  <input type="text" id="aq-id" placeholder="請輸入 Aquarium ID">
-  <button onclick="fetchFeedingSchedule()">查詢</button>
-
-  <div id="feed-info"></div>
-
-  <script>
-    function fetchFeedingSchedule() {
-      const aquariumId = document.getElementById("aq-id").value.trim();
-      const token = localStorage.getItem("jwt");
-
-      if (!aquariumId) {
-        alert("請輸入 Aquarium ID");
-        return;
-      }
-
-      if (!token) {
-        alert("請先登入，無法取得 JWT token");
-        return;
-      }
-
-      fetch(`/api/get_next_feeding_schedule/${aquariumId}`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      })
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById("feed-info");
-
-          if (data.error) {
-            container.innerHTML = `<p style="color:red;">❌ 錯誤：${data.error}</p>`;
-            return;
-          }
-
-          container.innerHTML = `
-            <p>🐠 <strong>Aquarium ID：</strong> ${aquariumId}</p>
-            <p>🕒 <strong>現在時間：</strong> ${data.current_time}</p>
-            <p>📍 <strong>上次餵食：</strong> ${data.last_update}</p>
-            <p>⏱️ <strong>餵食間隔：</strong> ${data.feed_interval}</p>
-            <p>🔜 <strong>下一次餵食：</strong> ${data.next_feed_time}</p>
-            <p>⌛ <strong>剩餘時間：</strong> ${data.time_remaining}</p>
-            <p>🍽️ <strong>餵食量：</strong> ${data.feed_amount}</p>
-            <p>🚨 <strong>是否該餵食：</strong> ${data.should_feed_now ? '✅ 是' : '❌ 否'}</p>
-          `;
-        })
-        .catch(err => {
-          console.error("API 錯誤：", err);
-          document.getElementById("feed-info").innerHTML = `<p style="color:red;">❌ 查詢失敗，請稍後再試。</p>`;
-        });
-    }
-  </script>
-
-</body>
-</html>
+    fetch('/api/aquarium/lights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: state })
+    })
+    .then(res => res.json())
+    .then(data => console.log(data))
+    .catch(err => console.error('API 錯誤:', err));
+});
+</script>

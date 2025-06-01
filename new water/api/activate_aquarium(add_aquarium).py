@@ -1,6 +1,7 @@
 from flask import Blueprint,request,jsonify
 import jwt
 import Database.db2 
+import MQTT.MQTT
 
 api = Blueprint('api', __name__)
 
@@ -22,9 +23,12 @@ def activate_aquarium(aquarium_id):
 
         # 如果已激活，只允許綁定使用者，不允許修改參數
         if Database.db2.is_aquarium_activated(aquarium_id):
+            data = request.get_json()
+            aquarium_name = data.get("aquarium_name")
             Database.db2.bind_user_to_aquarium(user_id, aquarium_id, aquarium_name)
             return jsonify({"status": "joined", "message": "此水族箱已被激活，已加入為共同管理者"}), 200
-        
+
+        # 取得設定資訊
         data = request.get_json()
         aquarium_name = data.get("aquarium_name")
         fish_species = data.get("fish_species")
@@ -43,13 +47,17 @@ def activate_aquarium(aquarium_id):
         if not success:
             return jsonify({"status": "error", "message": "激活失敗或資料無效"}), 500
 
-        return jsonify({"status": "success", "message": "水族箱已成功激活"}), 200
+        # ✅ 取得該水族箱的完整資料以便傳送給硬體
+        aquarium = Database.db2.get_aquarium_by_id(aquarium_id)
+        if aquarium:
+            MQTT.MQTT.publish_aquarium_settings(aquarium)
+
+        return jsonify({"status": "success", "message": "水族箱已成功激活並已通知硬體"}), 200
 
     except jwt.ExpiredSignatureError:
         return jsonify({'error': 'Token 已過期'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Token 驗證失敗'}), 401
-
     
 
 
