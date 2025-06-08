@@ -66,19 +66,24 @@ def get_aquarium_by_id(aquarium_id: str) -> dict | None:
     cursor = None
     try:
         conn = get_connection()
-        cursor = conn.cursor(dictionary=True) 
+        cursor = conn.cursor(dictionary=True)
+        
         cursor.execute("""
-            SELECT * FROM Aquarium where aquarium_id=%s
+            SELECT a.*, an.aquarium_name
+            FROM Aquarium a
+            LEFT JOIN aquriumname an
+            ON a.aquarium_id = an.aquarium_id
+            WHERE a.aquarium_id = %s
         """, (aquarium_id,))
         
-        aquariums = cursor.fetchone()
-        return aquariums
+        aquarium = cursor.fetchone()
+        return aquarium
     except Exception as e:
         print("Database error:", str(e))
-        return []
+        return None
     finally:
-        cursor.close()
-        conn.close()
+        if cursor: cursor.close()
+        if conn: conn.close()
 
 def get_user_by_id(user_id: str) -> list[dict]:
     """根據使用者id查詢使用者資料，回傳 dict 或 None。"""
@@ -179,6 +184,53 @@ def save_user(user_id,display_name, login_type="Line"):
             cursor.close()
         if conn:
             conn.close()
+
+# Database/db2.py
+
+def update_line_bot_id(user_id: str, line_bot_id: str) -> bool:
+    """更新已存在的使用者的 line_bot_id"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE users SET line_bot_id = %s WHERE user_id = %s",
+            (line_bot_id, user_id)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print("[DB ERROR] 更新 line_bot_id 發生錯誤:", e)
+        return False
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+
+def insert_user_with_ids(user_id: str, line_bot_id: str) -> bool:
+    """新增使用者資料"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO users (user_id, line_bot_id, Login_type, Last_login)
+            VALUES (%s, %s, 'Line', NOW())
+            """,
+            (user_id, line_bot_id)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print("[DB ERROR] 新增使用者失敗:", e)
+        return False
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
 
 #------------------------------------------------------
 # 更新水族箱的所有設定(模擬新增)
@@ -428,6 +480,21 @@ def update_feeding_settings(aquarium_id: str, feed_amount: int, feed_time: str) 
         cursor.close()
         conn.close()
 
+def get_task_by_aquarium_id(aquarium_id: str) -> dict | None:
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM ai_tasks WHERE aquarium_id = %s", (aquarium_id,))
+        return cursor.fetchone()
+    except Exception as e:
+        print("Database error:", e)
+        return None
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+        
 # 新增事件紀錄函式
 
 def insert_event_record(user_id: str, aquarium_id: str, status: bool, category: str, action: str) -> bool:
@@ -464,6 +531,107 @@ def get_activated_aquariums():
             WHERE activated = 1
         """)
         return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_status_history_by_aquarium_id(aquarium_id: str) -> list[dict]:
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT record_id, aquarium_id, TDS, temperature, water_level, record_time
+            FROM statushistory
+            WHERE aquarium_id = %s
+            ORDER BY record_time ASC
+        """, (aquarium_id,))
+        records = cursor.fetchall()
+        return records
+    except Exception as e:
+        print("Database error:", e)
+        return []
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+def get_user_all_aquariums_recent_dialogues(user_id: str, limit: int = 3) -> list[str]:
+    conn = None
+    cursor = None
+    try:    
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            WITH RankedDialogue AS (
+                SELECT 
+                    d.question,
+                    d.aquarium_id,
+                    aqn.aquarium_name,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY d.aquarium_id 
+                        ORDER BY d.transmit_time DESC
+                    ) AS rn
+                FROM dialogue d
+                JOIN aquriumname aqn 
+                    ON d.aquarium_id = aqn.aquarium_id 
+                   AND d.user_id = aqn.user_id
+                WHERE aqn.user_id = %s
+            )
+            SELECT question, aquarium_id, aquarium_name
+            FROM RankedDialogue
+            WHERE rn <= %s
+            ORDER BY aquarium_id, rn
+        """, (user_id, limit))
+
+        rows = cursor.fetchall()
+
+        if not rows:
+            return []
+
+        # 把每筆資料轉換成 "水族箱名稱：對話內容"
+        result = [f"{row[2]}：{row[0]}" for row in rows]
+        return result
+
+    except Exception as e:
+        print("[get_user_all_aquariums_recent_dialogues ERROR]", str(e))
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+        
+def add_aquarium(user_id, aquarium_name, fish_species, fish_amount, ai_model, min_temp, max_temp, feeding_frequency, feeding_amount):
+    conn = get_connection()
+    cursor = conn.cursor()
+    feed_time = feeding_frequency
+
+    try:
+        # 產生唯一的水族箱 ID（使用 MySQL 的 UUID()）
+        cursor.execute("SELECT UUID()")
+        aquarium_id = cursor.fetchone()[0]
+
+        # 插入到 Aquarium 表
+        cursor.execute("""
+            INSERT INTO Aquarium (aquarium_id, fish_species, fish_amount, AI_model,
+                                  lowest_temperature, highest_temperature, feed_time, feed_amount, Last_update)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """, (
+            aquarium_id, fish_species, fish_amount, ai_model,
+            min_temp, max_temp, feed_time, feeding_amount
+        ))
+
+        # 插入到 aquriumName 表
+        cursor.execute("""
+            INSERT INTO aquriumName (user_id, aquarium_id, aquarium_name)
+            VALUES (%s, %s, %s)
+        """, (user_id, aquarium_id, aquarium_name))
+
+        conn.commit()
+        return aquarium_id  
+    except Exception as e:
+        print("Database error:", str(e))
+        conn.rollback()
+        return None  
     finally:
         cursor.close()
         conn.close()

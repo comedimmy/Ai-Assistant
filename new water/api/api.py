@@ -4,12 +4,17 @@ import Database.db2
 from openai import OpenAI
 from datetime import datetime, timedelta
 import MQTT.MQTT
+import paho.mqtt.client as mqtt
 
 api = Blueprint('api', __name__)
 
+# MQTT broker 設定
+MQTT_BROKER = "localhost"
+MQTT_PORT = 1883
+
 SECRET_KEY = 'very-secret-key'  # Secret key for signing JWT
 
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="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")
 
 # 查詢使用者資料 API
 @api.route('/get_user_data', methods=['GET'])
@@ -134,18 +139,21 @@ def aquarium_details(aquarium_id):
         if aquarium:
             return jsonify({
                 'aquarium_id': aquarium['aquarium_id'],
+                'aquarium_name': aquarium.get('aquarium_name'),
+                'activated': aquarium['activated'],
                 'fish_species': aquarium['fish_species'],
                 'fish_amount': aquarium['fish_amount'],
                 'feed_amount': aquarium['feed_amount'],
+                'feed_time': str(aquarium['feed_time']),
+                'last_feed_timestamp': aquarium['last_feed_timestamp'],
                 'min_temp': aquarium['lowest_temperature'],
                 'max_temp': aquarium['highest_temperature'],
-                'last_update': aquarium['Last_update'],
-                'light_status': aquarium['light_status'],
                 'temperature': aquarium['temperature'],
+                'light_status': aquarium['light_status'],
                 'water_level': aquarium['water_level'],
                 'AI_model': aquarium['AI_model'],
-                'QR_code': aquarium['QR_code'],
                 'TDS': aquarium['TDS'],
+                'Last_update': aquarium['Last_update']
             })
         else:
             return jsonify({'error': '水族箱資料未找到'}), 404
@@ -154,6 +162,8 @@ def aquarium_details(aquarium_id):
         return jsonify({'error': 'Token 已過期'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Token 驗證失敗'}), 401
+
+
 
 # 向AI取得推薦的水族箱參數API
 @api.route('/recommend_aquarium_settings', methods=['POST'])
@@ -341,8 +351,8 @@ def get_dialogue(aquarium_id):
         return jsonify({'error': 'Token 驗證失敗'}), 401
 
 
-@api.route('/get_AI_dialogue_respown/<aquarium_id>', methods=['POST'])
-def get_AI_dialogue_respown(aquarium_id):
+@api.route('/get_user_AI_response', methods=['POST'])
+def user_bot_response():
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({'error': '缺少或格式錯誤的 Authorization header'}), 402
@@ -360,16 +370,11 @@ def get_AI_dialogue_respown(aquarium_id):
         if not user_id:
             return jsonify({'error': 'Token 無效，缺少 user_id'}), 403
 
-        # 取得該水族箱最近幾筆的使用者問題
-        recent_questions = Database.db2.get_recent_questions(aquarium_id, limit=5)
+        recent_questions = Database.db2.get_user_all_aquariums_recent_dialogues(user_id, limit=3)
 
         messages = [
             {"role": "system", "content": (
-                "你是智慧水族箱的 AI 管家，"
-                "專門協助使用者了解魚類的飼養、水質調整、溫度控制、"
-                "餵食建議及疾病預防等資訊。請使用繁體中文、並盡量用簡短的幾句話說明，"
-                "語氣親切簡潔，避免回答非魚類相關問題。"
-                "請不要使用任何 Markdown 標記語法（例如 ** 粗體、_ 斜體、` 代碼等），僅使用純文字回答。"
+                "你是智慧水族管家，專門幫助使用者統整所有水族箱的問題與建議，語氣親切簡潔，用繁體中文純文字回答。"
             )}
         ]
 
@@ -386,8 +391,53 @@ def get_AI_dialogue_respown(aquarium_id):
         )
 
         gpt_reply = response.choices[0].message.content.strip()
+        return jsonify({"GPT_messenge": gpt_reply})
 
-        # 儲存進 dialogue_pairs
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token 已過期'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Token 驗證失敗'}), 401
+
+@api.route('/get_aquarium_AI_response/<aquarium_id>', methods=['POST'])
+def aquarium_bot_response(aquarium_id):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': '缺少或格式錯誤的 Authorization header'}), 402
+
+    token = auth_header.split(' ')[1]
+    data = request.get_json()
+    user_input = data.get("messenge")
+
+    if not user_input:
+        return jsonify({"error": "請提供訊息內容"}), 400
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Token 無效，缺少 user_id'}), 403
+
+        recent_questions = Database.db2.get_recent_questions(aquarium_id, limit=5)
+
+        messages = [
+            {"role": "system", "content": (
+                "你是水族箱的 AI 管家，協助用戶管理水質、魚類健康、溫度與餵食。請使用繁體中文、語氣親切簡潔，回應純文字格式。"
+            )}
+        ]
+
+        for q in recent_questions:
+            messages.append({"role": "user", "content": q})
+
+        messages.append({"role": "user", "content": user_input})
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=1000,
+            temperature=0.7,
+        )
+
+        gpt_reply = response.choices[0].message.content.strip()
         Database.db2.insert_dialogue(aquarium_id, user_id, user_input, gpt_reply)
 
         return jsonify({"GPT_messenge": gpt_reply})
@@ -533,7 +583,70 @@ def control_light():
         return jsonify({"error": f"MQTT 發送失敗: {str(e)}"}), 500
 
 
+@api.route('/get_ai_task_by_aquarium', methods=['POST'])
+def get_ai_task_by_aquarium():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': '缺少或格式錯誤的 Authorization header'}), 401
+
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = payload.get("user_id")
+        if not user_id:
+            return jsonify({'error': 'Token 無效'}), 403
+
+        data = request.get_json()
+        aquarium_id = data.get('aquarium_id')
+        if not aquarium_id:
+            return jsonify({'error': '缺少 aquarium_id'}), 400
+
+        task = Database.db2.get_task_by_aquarium_id(aquarium_id)
+        if task:
+            time_fields = ['feed_time', 'light_on_time', 'light_off_time']
+    
+            for field in time_fields:
+                if field in task and task[field] is not None:
+                    task[field] = str(task[field])  # 轉成 'HH:MM:SS' 格式字串
+            return jsonify(task), 200
+        else:
+            return jsonify({'error': '查無此水族箱任務'}), 404
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token 已過期'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Token 驗證失敗'}), 401
+
+@api.route('/get_status_history_by_aquarium', methods=['POST'])
+def get_status_history_by_aquarium():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': '缺少或格式錯誤的 Authorization header'}), 401
+
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        if not payload.get("user_id"):
+            return jsonify({'error': 'Token 無效'}), 403
+
+        data = request.get_json()
+        aquarium_id = data.get('aquarium_id')
+        if not aquarium_id:
+            return jsonify({'error': '缺少 aquarium_id'}), 400
+
+        records = Database.db2.get_status_history_by_aquarium_id(aquarium_id)
+        if records:
+            return jsonify(records), 200
+        else:
+            return jsonify([]), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token 已過期'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Token 驗證失敗'}), 401
+
 
 @api.route('/test_database',methods=['GET'])
 def api_test():
     return 'test_database'
+

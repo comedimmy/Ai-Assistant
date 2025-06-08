@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>查詢歷史紀錄</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>水族箱歷史紀錄查詢</h2>
+
+    <label for="aquariumId">輸入 Aquarium ID：</label>
+    <input type="text" id="aquariumId">
+    <button onclick="fetchHistory()">查詢</button>
+
+    <hr>
+
+    <div id="result"></div>
+
+    <h3>TDS 折線圖</h3>
+    <canvas id="tdsChart" width="800" height="300"></canvas>
+
+    <h3>溫度折線圖</h3>
+    <canvas id="tempChart" width="800" height="300"></canvas>
+
+    <h3>水位折線圖</h3>
+    <canvas id="waterChart" width="800" height="300"></canvas>
+
+    <script>
+        let tdsChart, tempChart, waterChart;
+
+        async function fetchHistory() {
+            const aquariumId = document.getElementById('aquariumId').value;
+            const token = localStorage.getItem('jwt');
+
+            if (!aquariumId) return alert('請輸入水族箱 ID');
+            if (!token) return alert('找不到登入憑證 (jwt token)');
+
+            const res = await fetch('/api/get_status_history_by_aquarium', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ aquarium_id: aquariumId })
+            });
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.length === 0) {
+                    resultDiv.innerHTML = '<p>查無紀錄</p>';
+                    return;
+                }
+
+                // 表格
+                const table = document.createElement('table');
+                table.border = 1;
+                const header = table.insertRow();
+                ['record_id', 'TDS', 'temperature', 'water_level', 'record_time'].forEach(text => {
+                    const th = document.createElement('th');
+                    th.textContent = text;
+                    header.appendChild(th);
+                });
+
+                data.forEach(row => {
+                    const tr = table.insertRow();
+                    tr.insertCell().textContent = row.record_id;
+                    tr.insertCell().textContent = row.TDS;
+                    tr.insertCell().textContent = row.temperature;
+                    tr.insertCell().textContent = row.water_level;
+                    tr.insertCell().textContent = row.record_time;
+                });
+
+                resultDiv.appendChild(table);
+
+                // 資料整理
+                const labels = data.map(r => r.record_time);
+                const tdsData = data.map(r => r.TDS);
+                const tempData = data.map(r => r.temperature);
+                const waterData = data.map(r => r.water_level);
+
+                // 清除舊圖表
+                if (tdsChart) tdsChart.destroy();
+                if (tempChart) tempChart.destroy();
+                if (waterChart) waterChart.destroy();
+
+                // 畫 TDS 圖
+                tdsChart = new Chart(document.getElementById('tdsChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'TDS',
+                            data: tdsData,
+                            borderWidth: 2,
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: '時間' }},
+                            y: { title: { display: true, text: 'TDS 數值' }, beginAtZero: true }
+                        }
+                    }
+                });
+
+                // 畫溫度圖
+                tempChart = new Chart(document.getElementById('tempChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '溫度 (°C)',
+                            data: tempData,
+                            borderWidth: 2,
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: '時間' }},
+                            y: { title: { display: true, text: '溫度 (°C)' }, beginAtZero: true }
+                        }
+                    }
+                });
+
+                // 畫水位圖
+                waterChart = new Chart(document.getElementById('waterChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '水位 (%)',
+                            data: waterData,
+                            borderWidth: 2,
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: '時間' }},
+                            y: { title: { display: true, text: '水位 (%)' }, beginAtZero: true }
+                        }
+                    }
+                });
+
+            } else {
+                const error = await res.json();
+                resultDiv.innerHTML = `<p style="color: red;">錯誤：${error.error || '查詢失敗'}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

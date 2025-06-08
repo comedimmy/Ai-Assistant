@@ -6,9 +6,9 @@ api = Blueprint('api', __name__)
 
 SECRET_KEY = 'very-secret-key'  # Secret key for signing JWT
 
-# -------------------------------------------+
-# 查詢水族箱資訊API input:token,aquarium_id
-# -------------------------------------------+
+# ------------------------------------------------------------------------------------+
+# 查詢水族箱資訊API input:token,aquarium_id,新增欄位:aquarium_name,last_feed_timestamp
+# ------------------------------------------------------------------------------------+
 @api.route('/get_aquarium_details/<aquarium_id>', methods=['GET'])
 def aquarium_details(aquarium_id):
     auth_header = request.headers.get('Authorization')
@@ -26,18 +26,21 @@ def aquarium_details(aquarium_id):
         if aquarium:
             return jsonify({
                 'aquarium_id': aquarium['aquarium_id'],
+                'aquarium_name': aquarium.get('aquarium_name'),
+                'activated': aquarium['activated'],
                 'fish_species': aquarium['fish_species'],
                 'fish_amount': aquarium['fish_amount'],
                 'feed_amount': aquarium['feed_amount'],
+                'feed_time': str(aquarium['feed_time']),
+                'last_feed_timestamp': aquarium['last_feed_timestamp'],
                 'min_temp': aquarium['lowest_temperature'],
                 'max_temp': aquarium['highest_temperature'],
-                'last_update': aquarium['Last_update'],
-                'light_status': aquarium['light_status'],
                 'temperature': aquarium['temperature'],
+                'light_status': aquarium['light_status'],
                 'water_level': aquarium['water_level'],
                 'AI_model': aquarium['AI_model'],
-                'QR_code': aquarium['QR_code'],
                 'TDS': aquarium['TDS'],
+                'Last_update': aquarium['Last_update']
             })
         else:
             return jsonify({'error': '水族箱資料未找到'}), 404
@@ -46,6 +49,8 @@ def aquarium_details(aquarium_id):
         return jsonify({'error': 'Token 已過期'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Token 驗證失敗'}), 401
+
+
 
 '''
 #------------------------------------------------------
@@ -56,18 +61,23 @@ def get_aquarium_by_id(aquarium_id: str) -> dict | None:
     cursor = None
     try:
         conn = get_connection()
-        cursor = conn.cursor(dictionary=True) 
+        cursor = conn.cursor(dictionary=True)
+        
         cursor.execute("""
-            SELECT * FROM Aquarium where aquarium_id=%s
+            SELECT a.*, an.aquarium_name
+            FROM Aquarium a
+            LEFT JOIN aquriumname an
+            ON a.aquarium_id = an.aquarium_id
+            WHERE a.aquarium_id = %s
         """, (aquarium_id,))
         
-        aquariums = cursor.fetchone()
-        return aquariums
+        aquarium = cursor.fetchone()
+        return aquarium
     except Exception as e:
         print("Database error:", str(e))
-        return []
+        return None
     finally:
-        cursor.close()
-        conn.close()
+        if cursor: cursor.close()
+        if conn: conn.close()
         
 '''

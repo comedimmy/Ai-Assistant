@@ -1,19 +1,86 @@
-<label class="switch">
-  <input type="checkbox" id="lightSwitch">
-  <span class="slider"></span>
-</label>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 測試介面</title>
+</head>
+<body>
+    <h2>AI 測試介面</h2>
 
-<script>
-document.getElementById('lightSwitch').addEventListener('change', function () {
-    const state = this.checked ? "on" : "off";
+    <label>
+        <input type="radio" name="mode" value="aquarium" checked> 水族箱 AI
+    </label>
+    <label>
+        <input type="radio" name="mode" value="user"> 使用者 AI
+    </label>
 
-    fetch('/api/aquarium/lights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: state })
-    })
-    .then(res => res.json())
-    .then(data => console.log(data))
-    .catch(err => console.error('API 錯誤:', err));
-});
-</script>
+    <div id="aquariumIdInput">
+        <p>輸入 Aquarium ID：</p>
+        <input type="text" id="aquarium_id" placeholder="例如：1234-5678-90">
+    </div>
+
+    <p>輸入訊息：</p>
+    <textarea id="message" rows="4" cols="50" placeholder="請輸入訊息"></textarea><br><br>
+
+    <button onclick="sendMessage()">送出</button>
+
+    <h3>回應：</h3>
+    <pre id="responseBox"></pre>
+
+    <script>
+        const responseBox = document.getElementById("responseBox");
+        const aquariumIdInput = document.getElementById("aquariumIdInput");
+
+        // 切換模式時顯示/隱藏 Aquarium ID 輸入欄位
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener("change", () => {
+                const mode = document.querySelector('input[name="mode"]:checked').value;
+                aquariumIdInput.style.display = mode === "aquarium" ? "block" : "none";
+            });
+        });
+
+        async function sendMessage() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const token = localStorage.getItem("jwt");
+            const message = document.getElementById("message").value;
+            const aquariumId = document.getElementById("aquarium_id").value;
+
+            if (!token) {
+                alert("尚未在 localStorage 中找到 jwt！");
+                return;
+            }
+
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            };
+
+            const body = JSON.stringify({ messenge: message });
+
+            let url = "";
+            if (mode === "aquarium") {
+                if (!aquariumId) {
+                    alert("請輸入 aquarium_id");
+                    return;
+                }
+                url = `/api/get_aquarium_AI_response/${aquariumId}`;
+            } else {
+                url = `/api/get_user_AI_response`;
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: headers,
+                    body: body
+                });
+
+                const data = await res.json();
+                responseBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                responseBox.textContent = "錯誤：" + err;
+            }
+        }
+    </script>
+</body>
+</html>

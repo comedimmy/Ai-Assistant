@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Task 查詢</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: 300px; }
+    #result, #tokenInfo {
+      white-space: pre-wrap;
+      background: #f8f8f8;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 15px;
+      width: 600px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔐 JWT 使用者資訊</h2>
+  <div id="tokenInfo">讀取中...</div>
+
+  <h2>🔍 查詢 AI Tasks</h2>
+  <label>水族箱 ID：</label><br>
+  <input type="text" id="aquarium_id" placeholder="輸入 aquarium_id，例如 ca5e0ab0-..."><br>
+  <button onclick="searchTask()">查詢任務</button>
+
+  <h3>查詢結果：</h3>
+  <div id="result">尚未查詢</div>
+
+  <script>
+    // 顯示目前登入的 JWT Payload
+    function decodeTokenPayload(token) {
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decoded = atob(payloadBase64);
+        return JSON.parse(decoded);
+      } catch (err) {
+        return { error: "無法解析 token" };
+      }
+    }
+
+    function showTokenInfo() {
+      const token = localStorage.getItem("jwt");
+      const tokenDiv = document.getElementById("tokenInfo");
+      if (!token) {
+        tokenDiv.textContent = "❗ 尚未登入或找不到 token（localStorage 裡沒有 'token'）";
+        return;
+      }
+
+      const payload = decodeTokenPayload(token);
+      tokenDiv.textContent = "✅ JWT 已載入，Payload 如下：\n" + JSON.stringify(payload, null, 2);
+    }
+
+    async function searchTask() {
+      const aquariumId = document.getElementById("aquarium_id").value.trim();
+      const resultDiv = document.getElementById("result");
+
+      if (!aquariumId) {
+        resultDiv.textContent = "❗ 請輸入 aquarium_id";
+        return;
+      }
+
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        resultDiv.textContent = "❗ 找不到 token，請先登入";
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/get_ai_task_by_aquarium', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ aquarium_id: aquariumId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          resultDiv.textContent = `❌ 查詢失敗 (${response.status})：\n` + JSON.stringify(data, null, 2);
+        } else {
+          resultDiv.textContent = `✅ 查詢成功：\n` + JSON.stringify(data, null, 2);
+        }
+
+      } catch (err) {
+        resultDiv.textContent = "⚠ 發生錯誤：" + err;
+      }
+    }
+
+    // 頁面載入時顯示 token 資訊
+    window.onload = showTokenInfo;
+  </script>
+
+</body>
+</html>
